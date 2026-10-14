@@ -1,7 +1,0 @@
-fastapi
-uvicorn[standard]
-psycopg[binary]
-sqlalchemy
-sqlalchemy[asyncio]
-pydantic
-pydantic-settings
