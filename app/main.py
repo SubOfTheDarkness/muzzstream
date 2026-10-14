@@ -3,6 +3,7 @@
 Создает экземпляр FastAPI, настраивает глобальные обработчики ошибок и регистрирует маршрутизацию (роутеры)
 """
 
+import asyncio
 from fastapi import FastAPI, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
@@ -25,10 +26,15 @@ async def root() -> dict:
 async def check_db_connection(db: AsyncSession = Depends(get_db)) -> dict:
     """
     Тестовый эндпоинт для проверки соединения с БД
-    Выполняет простейший легковесный SQL-запрос через пул подключений
+    Выполняет простейший легковесный SQL-запрос через пул подключений с таймаутом 5 секунд
     """
     try:
-        result = await db.execute(text("SELECT 1"))
+        result = await asyncio.wait_for(
+            db.execute(text("SELECT 1")),
+            timeout=5.0
+        )
         return {"status": "connected", "postgres_response": result.scalar()}
+    except asyncio.TimeoutError:
+        return {"status": "error", "details": "Превышено время ожидания ответа от базы данных (Таймаут)"}
     except Exception as e:
         return {"status": "error", "details": str(e)}
