@@ -24,7 +24,7 @@ class ListeningHistory(Base):
         ForeignKey("tracks.track_id", ondelete="CASCADE"), 
         nullable=False
     )
-    listened_seconds: Mapped[int] = mapped_column(INT, nullable=False)
+    listened_duration: Mapped[int] = mapped_column(INT, nullable=False)
     
     listening_at: Mapped[datetime] = mapped_column(
         TIMESTAMPTZ, 

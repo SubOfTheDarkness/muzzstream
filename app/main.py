@@ -1,6 +1,7 @@
 """
-Главный модуль инициализации
-Создает экземпляр FastAPI, настраивает глобальные обработчики ошибок и регистрирует маршрутизацию (роутеры)
+Главный модуль инициализации приложения «MuzzStream API».
+
+Создает экземпляр FastAPI, настраивает глобальные обработчики ошибок и регистрирует маршрутизацию (роутеры) для работы с аудиосервисом.
 """
 
 import asyncio
@@ -8,12 +9,15 @@ from fastapi import FastAPI, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import text
 from app.database import get_db
+from app.routers import tracks
 
 app = FastAPI(
     title="MuzzStream API",
     description="Бэкенд-API для управления треками, авторами, пользовательскими плейлистами и аудиостримингом.",
     version="1.0.0"
 )
+
+app.include_router(tracks.router, prefix="/api/v1/tracks", tags=["Tracks"])
 
 
 @app.get("/")
@@ -25,8 +29,7 @@ async def root() -> dict:
 @app.get("/api/v1/db-check")
 async def check_db_connection(db: AsyncSession = Depends(get_db)) -> dict:
     """
-    Тестовый эндпоинт для проверки соединения с БД
-    Выполняет простейший легковесный SQL-запрос через пул подключений с таймаутом 5 секунд
+    Тестовый эндпоинт для проверки соединения с БД.
     """
     try:
         result = await asyncio.wait_for(

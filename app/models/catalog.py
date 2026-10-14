@@ -63,7 +63,8 @@ class Track(Base):
     track_id: Mapped[int] = mapped_column(INT, primary_key=True, autoincrement=True)
     track_name: Mapped[str] = mapped_column(TEXT, nullable=False)
     release_year: Mapped[int] = mapped_column(SMALLINT, nullable=False)
-    duration_seconds: Mapped[int] = mapped_column(INT, nullable=False)
+    duration: Mapped[int] = mapped_column(INT, nullable=False)
+    filepath: Mapped[str] = mapped_column(TEXT, unique=True, nullable=False)
     
     album_id: Mapped[int | None] = mapped_column(INT, ForeignKey("albums.album_id", ondelete="SET NULL"), nullable=True)
 
