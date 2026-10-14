@@ -1,8 +1,6 @@
 """
-Конфигурация бэкенда.
-
-Загружает переменные окружения из файла .env и предоставляет
-настройки для подключения к базе данных PostgreSQL.
+Конфигурация бэкенда
+Загружает переменные окружения из файла .env и настраивает подключение к БД
 """
 
 import os
@@ -10,7 +8,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    """Менеджер настроек приложения на базе Pydantic."""
+    """Менеджер настроек"""
     DB_USER: str
     DB_PASS: str
     DB_HOST: str
@@ -19,12 +17,7 @@ class Settings(BaseSettings):
 
     @property
     def database_url(self) -> str:
-        """
-        Формирует строку подключения к базе данных для асинхронного драйвера psycopg.
-        
-        Возвращает:
-            str: Сформированный URL подключения к PostgreSQL.
-        """
+        """Формирует строку подключения к БД для psycopg"""
         return f"postgresql+psycopg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
 
     model_config = SettingsConfigDict(
