@@ -3,10 +3,10 @@
 """
 
 from datetime import datetime
-from sqlalchemy import TEXT, INT, TIMESTAMPTZ, ForeignKey, func
+from sqlalchemy import TEXT, INT, TIMESTAMP, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
-
+from typing import Optional
 
 class StatusCode(Base):
     """
@@ -29,7 +29,7 @@ class AuditLog(Base):
 
     log_id: Mapped[int] = mapped_column(INT, primary_key=True, autoincrement=True)
     
-    user_id: Mapped[int | None] = mapped_column(
+    user_id: Mapped[Optional[int]] = mapped_column(
         INT, 
         ForeignKey("users.user_id", ondelete="SET NULL"), 
         nullable=True
@@ -44,10 +44,10 @@ class AuditLog(Base):
     )
     
     operation_time: Mapped[datetime] = mapped_column(
-        TIMESTAMPTZ, 
+        TIMESTAMP(timezone=True), 
         nullable=False, 
         server_default=func.now()
     )
 
-    user: Mapped["User" | None] = relationship("User")
+    user: Mapped[Optional["User"]] = relationship("User")
     status: Mapped["StatusCode"] = relationship("StatusCode")

@@ -3,11 +3,11 @@
 """
 
 from datetime import datetime
-from sqlalchemy import INT, TIMESTAMPTZ, ForeignKey, func
+from sqlalchemy import INT, TIMESTAMP, ForeignKey, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
 from app.models.catalog import Track
-
+from typing import Optional
 
 class ListeningHistory(Base):
     """Модель таблицы 'listening_history'"""
@@ -27,7 +27,7 @@ class ListeningHistory(Base):
     listened_duration: Mapped[int] = mapped_column(INT, nullable=False)
     
     listening_at: Mapped[datetime] = mapped_column(
-        TIMESTAMPTZ, 
+        TIMESTAMP(timezone=True), 
         nullable=False, 
         server_default=func.now()
     )

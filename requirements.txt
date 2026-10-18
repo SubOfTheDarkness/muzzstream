@@ -5,3 +5,4 @@ sqlalchemy
 sqlalchemy[asyncio]
 pydantic
 pydantic-settings
+pydantic[email]

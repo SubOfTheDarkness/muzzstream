@@ -1,35 +1,178 @@
 """
 Модуль маршрутизации для работы с музыкальным каталогом и аудиостримингом.
+Реализует эндпоинты получения списков треков через модели СУБД и порционную отдачу аудио (стриминг)
 """
 
-from fastapi import APIRouter, HTTPException, Depends
-from fastapi.responses import FileResponse
-from sqlalchemy.ext.asyncio import AsyncSession
 import os
+from typing import List, Optional
+from fastapi import APIRouter, HTTPException, Depends, status, Header
+from fastapi.responses import FileResponse, StreamingResponse
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from sqlalchemy.orm import joinedload, selectinload
+
 from app.database import get_db
-from app.models.catalog import Track
+from app.models.catalog import Track, Composition, Genre, Album, genres_of_composition
+from app.models.views import TrackDetailsView
+from app.schemes.catalog import TrackResponseSchema, AlbumFullResponseSchema
 
 router = APIRouter()
 
+@router.get("/all", response_model=List[TrackResponseSchema])
+async def get_all_tracks(
+    genre_name: Optional[str] = None, 
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Получение списка всех доступных треков системы с полной информацией.
+    """
+    try:
+        stmt = select(Track).options(
+            joinedload(Track.album),
+            joinedload(Track.composition).options(
+                selectinload(Composition.authors),
+                selectinload(Composition.genres)
+            )
+        )
+        
+        if genre_name:
+            stmt = (
+                stmt.join(Composition, Track.composition_id == Composition.composition_id)
+                .join(genres_of_composition, Composition.composition_id == genres_of_composition.c.composition_id)
+                .join(Genre, genres_of_composition.c.genre_id == Genre.genre_id)
+                .where(Genre.genre_name == genre_name)
+            )
+            
+        result = await db.execute(stmt)
+        tracks_data = result.scalars().unique().all()
+        
+        return tracks_data
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка ORM при получении каталога треков: {str(e)}"
+        )
+
+@router.get("/albums/{album_id}", response_model=AlbumFullResponseSchema)
+async def get_album_with_tracks(album_id: int, db: AsyncSession = Depends(get_db)):
+    """
+    Получение полной информации об альбоме, его авторах, жанрах и всех входящих в него треках.
+    """
+    try:
+        stmt_album = (
+            select(Album)
+            .where(Album.album_id == album_id)
+            .options(
+                selectinload(Album.authors),
+                selectinload(Album.genres)
+            )
+        )
+        album_result = await db.execute(stmt_album)
+        album = album_result.scalars().first()
+        
+        if not album:
+            raise HTTPException(status_code=404, detail="Альбом не найден в базе данных")
+            
+        stmt_tracks = (
+            select(Track)
+            .where(Track.album_id == album_id)
+            .options(
+                joinedload(Track.composition).options(
+                    selectinload(Composition.authors),
+                    selectinload(Composition.genres)
+                )
+            )
+        )
+        
+        tracks_result = await db.execute(stmt_tracks)
+        tracks_data = tracks_result.scalars().unique().all()
+        
+        return {
+            "album_id": album.album_id,
+            "album_name": album.album_name,
+            "release_year": album.release_year,
+            "tracks_count": len(tracks_data),
+            "authors": album.authors,
+            "genres": album.genres,
+            "tracks": tracks_data
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Ошибка ORM при получении данных альбома: {str(e)}"
+        )
+
+def get_audio_chunk_generator(file_path: str, start: int, chunk_size: int = 1024 * 512):
+    """
+    Асинхронный генератор для чтения файла порциями (чанками).
+    """
+    with open(file_path, "rb") as video:
+        video.seek(start)
+        while True:
+            data = video.read(chunk_size)
+            if not data:
+                break
+            yield data
+
 
 @router.get("/{track_id}/stream")
-async def stream_track(track_id: int, db: AsyncSession = Depends(get_db)) -> FileResponse:
+async def stream_track(
+    track_id: int, 
+    range: Optional[str] = Header(None), 
+    db: AsyncSession = Depends(get_db)
+) -> StreamingResponse:
     """
-    Эндпоинт для потоковой отдачи аудиофайла по его идентификатору.
-    FastAPI автоматически обрабатывает байтовые Range-запросы от аудио-движка клиента, обеспечивая буферизацию и перемотку.
+    Эндпоинт для потоковой передачи аудиофайла чанками.
+    Поддерживает HTTP Range Requests (код 206) для обеспечения работы буферизации и мгновенной перемотки на стороне клиента.
     """
-
     track = await db.get(Track, track_id)
     if not track:
-        raise HTTPException(status_code=404, detail="Запись о треке не найдена в базе данных")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Запись о треке не найдена в базе данных"
+        )
 
-    file_path = track.filepath
+    file_path = track.absolute_filepath
 
     if not os.path.exists(file_path):
-        raise HTTPException(status_code=404, detail="Аудиофайл отсутствует на сервере")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, 
+            detail="Аудиофайл отсутствует на сервере"
+        )
 
-    return FileResponse(
-        path=file_path,
-        media_type="audio/mpeg",
-        filename=f"{track.track_name}.mp3"
+    file_size = os.path.getsize(file_path)
+
+    if range:
+        range_value = range.replace("bytes=", "").split("-")
+        start = int(range_value[0])
+        end = int(range_value[1]) if range_value[1] else file_size - 1
+        
+        if start >= file_size:
+            raise HTTPException(
+                status_code=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE,
+                detail="Запрошенный диапазон байт недостижим"
+            )
+            
+        chunk_size = (end - start) + 1
+        headers = {
+            "Accept-Ranges": "bytes",
+            "Content-Length": str(file_size),
+            "Content-Type": "audio/mpeg",
+            "Content-Disposition": "inline" 
+        }
+    else:
+        headers = {
+            "Accept-Ranges": "bytes",
+            "Content-Length": str(file_size),
+            "Content-Type": "audio/mpeg",
+        }
+    
+    return StreamingResponse(
+        get_audio_chunk_generator(file_path, 0, file_size),
+        status_code=200,
+        headers=headers
     )

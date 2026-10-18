@@ -5,10 +5,11 @@
 """
 
 import asyncio
-from fastapi import FastAPI, Depends
+from fastapi import FastAPI, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi.responses import JSONResponse
 from sqlalchemy import text
-from app.database import get_db
+from app.database import engine
 from app.routers import tracks
 
 app = FastAPI(
@@ -19,25 +20,35 @@ app = FastAPI(
 
 app.include_router(tracks.router, prefix="/api/v1/tracks", tags=["Tracks"])
 
+@app.middleware("http")
+async def check_db(request: Request, call_next):
+    """
+    Глобальный фильтр доступности.
+    Перед обработкой любого HTTP-запроса выполняет поверку активности БД. Если СУБД не отвечает за 2 секунды, прерывает запрос и возвращает HTTP 503 Service Unavailable.
+    """
+
+    if request.url.path in ["/", "/docs", "/openapi.json"]:
+        return await call_next(request)
+        
+    try:
+        async with engine.connect() as conn:
+            await asyncio.wait_for(
+                conn.execute(text("SELECT 1")),
+                timeout=2.0
+            )
+    except (asyncio.TimeoutError, Exception):
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "error": "Database Connection Error",
+                "message": "Сервис временно недоступен по техническим причинам: отсутствует связь с базой данных.",
+                "code": 503
+            }
+        )
+        
+    return await call_next(request)
 
 @app.get("/")
 async def root() -> dict:
     """Корневой эндпоинт для проверки статуса работы сервиса"""
     return {"status": "working", "message": "Welcome to the MuzzStream Backend"}
-
-
-@app.get("/api/v1/db-check")
-async def check_db_connection(db: AsyncSession = Depends(get_db)) -> dict:
-    """
-    Тестовый эндпоинт для проверки соединения с БД.
-    """
-    try:
-        result = await asyncio.wait_for(
-            db.execute(text("SELECT 1")),
-            timeout=5.0
-        )
-        return {"status": "connected", "postgres_response": result.scalar()}
-    except asyncio.TimeoutError:
-        return {"status": "error", "details": "Превышено время ожидания ответа от базы данных (Таймаут)"}
-    except Exception as e:
-        return {"status": "error", "details": str(e)}

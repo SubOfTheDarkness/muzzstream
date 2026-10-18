@@ -5,7 +5,7 @@
 from sqlalchemy import TEXT, VARCHAR, INT, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
-
+from typing import Optional
 
 class Session(Base):
     """
