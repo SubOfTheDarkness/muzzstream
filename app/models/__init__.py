@@ -13,10 +13,12 @@ from app.models.genre import Genre
 from app.models.catalog import Album, Composition, Track
 from app.models.playlist import Playlist
 from app.models.history import ListeningHistory
+from app.models.confirmation import EmailConfirmation
 
 from app.models.views import TrackDetailsView
 
 __all__ = [
-    "Base", "User", "Role", "Session", "AuditLog", "StatusCode", "Author", "GroupRole", "AuthorMember", "Genre", "Album", "Composition", "Track", "Playlist", "ListeningHistory",
+    "Base", "User", "Role", "Session", "AuditLog", "StatusCode", "Author", "GroupRole", "AuthorMember",
+    "Genre", "Album", "Composition", "Track", "Playlist", "ListeningHistory", "EmailConfirmation",
     "TrackDetailsView"
 ]

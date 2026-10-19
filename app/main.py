@@ -1,7 +1,7 @@
 """
 Главный модуль инициализации приложения «MuzzStream API».
 
-Создает экземпляр FastAPI, настраивает глобальные обработчики ошибок и регистрирует маршрутизацию (роутеры) для работы с аудиосервисом.
+Создает экземпляр FastAPI, настраивает глобальные обработчики ошибок и регистрирует маршруты для работы с аудиосервисом.
 """
 
 import asyncio
@@ -10,14 +10,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 from app.database import engine
-from app.routers import tracks
+from app.routers import tracks, auth
 
 app = FastAPI(
     title="MuzzStream API",
     description="Бэкенд-API для управления треками, авторами, пользовательскими плейлистами и аудиостримингом.",
-    version="1.0.0"
+    version="KKMT"
 )
 
+app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(tracks.router, prefix="/api/v1/tracks", tags=["Tracks"])
 
 @app.middleware("http")

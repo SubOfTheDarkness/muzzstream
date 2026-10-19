@@ -2,6 +2,7 @@
 DROP TABLE IF EXISTS roles;
 DROP TABLE IF EXISTS users;
 DROP TABLE IF EXISTS sessions;
+DROP TABLE IF EXISTS email_confirmations;
 DROP TABLE IF EXISTS authors;
 DROP TABLE IF EXISTS group_roles;
 DROP TABLE IF EXISTS author_members;
@@ -44,6 +45,12 @@ CREATE TABLE sessions (
 	device_name TEXT not null,
 	ip_address VARCHAR(15) not null,
 	foreign key (user_id) references users(user_id) ON DELETE CASCADE
+);
+
+CREATE TABLE email_confirmations (
+    email TEXT PRIMARY KEY REFERENCES users(email) ON DELETE CASCADE,
+    code VARCHAR(6) NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL
 );
 
 

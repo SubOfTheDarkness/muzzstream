@@ -4,8 +4,8 @@
 """
 
 import os
-from pydantic_settings import BaseSettings, SettingsConfigDict
-
+from pydantic_settings import BaseSettings, SettingsConfigDict, EmailStr
+from fastapi_mail import ConnectionConfig
 
 class Settings(BaseSettings):
     """Менеджер настроек"""
@@ -14,6 +14,11 @@ class Settings(BaseSettings):
     DB_HOST: str
     DB_PORT: int
     DB_NAME: str
+
+    SMTP_SERVER: str
+    SMTP_PORT: int
+    SMTP_EMAIL: EmailStr
+    SMTP_TOKEN: str
 
     @property
     def database_url(self) -> str:
@@ -24,6 +29,22 @@ class Settings(BaseSettings):
     def base_dir(self) -> str:
         """Возвращает абсолютный путь к корню всего проекта."""
         return os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+
+    @property
+    def mail_config(self) -> ConnectionConfig:
+        """Генерирует объект конфигурации для fastapi-mail"""
+        return ConnectionConfig(
+            MAIL_USERNAME=self.SMTP_EMAIL,
+            MAIL_PASSWORD=self.SMTP_TOKEN,
+            MAIL_FROM=self.SMTP_EMAIL,
+            MAIL_PORT=self.SMTP_PORT,
+            MAIL_SERVER=self.SMTP_SERVER,
+            MAIL_FROM_NAME="MuzzStream Service",
+            MAIL_STARTTLS=False,
+            MAIL_SSL_TLS=True,
+            USE_CREDENTIALS=True,
+            VALIDATE_CERTS=True
+        )
 
     model_config = SettingsConfigDict(
         env_file=os.path.join(os.path.dirname(os.path.dirname(__file__)), ".env"),
