@@ -4,7 +4,7 @@
 
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
-from app.schemes.base import BaseResponseSchema
+from app.schemas.base import BaseResponseSchema
 
 
 class UserRegisterRequestSchema(BaseModel):

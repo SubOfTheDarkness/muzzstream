@@ -4,8 +4,32 @@
 
 from pydantic import BaseModel, Field
 from typing import List, Optional
-from app.schemes.base import BaseResponseSchema
-from app.schemes.author import AuthorResponseSchema
+from app.schemas.base import BaseResponseSchema
+from app.schemas.author import AuthorResponseSchema
+
+
+class LogListeningRequestSchema(BaseModel):
+    """Схема запроса добавления трека в историю прослушиваний"""
+    user_id: int
+    track_id: int
+    listened_duration: int
+
+class TrackUploadFieldsSchema(BaseModel):
+    """Схема запроса на загрузку трека"""
+    composition_name: str
+    release_year: int
+    duration: int
+    version_type: str = "Studio"
+    genre_id: int
+    album_id: Optional[int] = None
+
+class TrackUpdateRequestSchema(BaseModel):
+    """Схема запроса для редактирования данных трека и композиции"""
+    track_name: Optional[str] = None
+    release_year: Optional[int] = None
+    duration: Optional[int] = None
+    version_type: Optional[str] = None
+    album_id: Optional[int] = None
 
 
 class GenreSchema(BaseResponseSchema):

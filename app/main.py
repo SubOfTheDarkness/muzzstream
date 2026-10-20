@@ -5,21 +5,61 @@
 """
 
 import asyncio
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Depends, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
-from app.database import engine
-from app.routers import tracks, auth
+from app.database import engine, async_session_local
+from app.routers import tracks, auth, playlists
+
+CHECK_AUTHOR_STATUS_INTERVAL_SEC = 60
+
+async def auto_restore_author_statuses():
+    """
+    Фоновая задача, сбрасывающая временные баны обратно на исторический статус группы по истечении времени.
+    """
+    while True:
+        await asyncio.sleep(CHECK_AUTHOR_STATUS_INTERVAL_SEC)
+        print("[BACKGROUND] Проверка временных санкций исполнителей...")
+        
+        async with async_session_local() as db:
+            try:
+                stmt = """
+                    UPDATE authors 
+                    SET current_status = next_status,
+                        status_until = NULL,
+                        next_status = NULL
+                    WHERE status_until IS NOT NULL
+                    AND NOW() >= status_until
+                    AND next_status IS NOT NULL;
+                """
+                result = await db.execute(text(stmt))
+                await db.commit()
+                
+                if result.rowcount > 0:
+                    print(f"[BACKGROUND] Успешно восстановлен статус для {result.rowcount} исполнителей.")
+            except Exception as e:
+                await db.rollback()
+                print(f"[BACKGROUND] Ошибка фонового обновления статусов: {str(e)}")
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    status_task = asyncio.create_task(auto_restore_author_statuses())
+    yield
+    status_task.cancel()
 
 app = FastAPI(
     title="MuzzStream API",
     description="Бэкенд-API для управления треками, авторами, пользовательскими плейлистами и аудиостримингом.",
-    version="KKMT"
+    version="KKMT",
+    lifespan=lifespan
 )
 
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(tracks.router, prefix="/api/v1/tracks", tags=["Tracks"])
+app.include_router(playlists.router, prefix="/api/v1/playlists", tags=["Playlists"])
 
 @app.middleware("http")
 async def check_db(request: Request, call_next):
@@ -28,7 +68,7 @@ async def check_db(request: Request, call_next):
     Перед обработкой любого HTTP-запроса выполняет поверку активности БД. Если СУБД не отвечает за 2 секунды, прерывает запрос и возвращает HTTP 503 Service Unavailable.
     """
 
-    if request.url.path in ["/", "/docs", "/openapi.json"]:
+    if request.url.path in ["/", "/docs", "/openapi.json", "/redoc"]:
         return await call_next(request)
         
     try:

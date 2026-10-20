@@ -14,8 +14,8 @@ from app.database import get_db
 from app.models.user import User
 from app.models.confirmation import EmailConfirmation
 from app.models.session import Session
-from app.security import hash_password, verify_password
-from app.schemes.auth import (
+from app.security.crypto import hash_password, verify_password
+from app.schemas.auth import (
     UserRegisterRequestSchema, 
     UserLoginRequestSchema, 
     TokenResponseSchema,

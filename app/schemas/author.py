@@ -4,8 +4,8 @@
 
 from pydantic import BaseModel, EmailStr
 from typing import Optional
-from app.schemes.base import BaseResponseSchema
-
+from app.schemas.base import BaseResponseSchema
+from datetime import datetime
 
 # --- ВХОДЯЩИЕ ДАННЫЕ ---
 
@@ -18,10 +18,13 @@ class AuthorCreateRequestSchema(BaseModel):
 # --- ИСХОДЯЩИЕ ДАННЫЕ ---
 
 class AuthorResponseSchema(BaseResponseSchema):
-    """Основная схема автора/исполнителя для вывода в каталоге"""
+    """Публичная схема карточки автора для вывода в каталоге"""
     author_id: int
     author_name: str
     country: Optional[str] = None
+    current_status: int
+    status_until: Optional[datetime] = None
+    next_status: Optional[int] = None
 
 
 class GroupRoleSchema(BaseResponseSchema):
@@ -41,3 +44,8 @@ class AuthorMemberResponseSchema(BaseResponseSchema):
     """Схема связи участника с группой и его уровнем прав"""
     user: MemberUserShortSchema
     role: GroupRoleSchema
+
+class ChangeMemberRoleRequestSchema(BaseModel):
+    """Схема для смены должности участника внутри группы"""
+    target_user_id: int
+    new_group_role_id: int # 2 = Manager, 3 = Member

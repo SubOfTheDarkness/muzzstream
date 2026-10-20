@@ -1,25 +1,47 @@
 """
 Модуль моделей для авторов (исполнителей)
 """
-
-from sqlalchemy import TEXT, INT, ForeignKey
+from datetime import datetime
+from typing import Optional
+from sqlalchemy import TEXT, INT, VARCHAR, TIMESTAMP, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base
 
+
+class AuthorStatus(Base):
+    """Модель таблицы 'author_statuses' (Справочник системных статусов)"""
+    __tablename__ = "author_statuses"
+
+    status_id: Mapped[int] = mapped_column(INT, primary_key=True, autoincrement=True)
+    status_text: Mapped[str] = mapped_column(TEXT, unique=True, nullable=False)
+
+
 class Author(Base):
-    """Модель таблицы 'authors'"""
+    """Модель таблицы 'authors"""
     __tablename__ = "authors"
 
     author_id: Mapped[int] = mapped_column(INT, primary_key=True, autoincrement=True)
-    author_name: Mapped[str] = mapped_column(TEXT, nullable=False)
-    country: Mapped[str | None] = mapped_column(TEXT, nullable=True)
+    author_name: Mapped[str] = mapped_column(TEXT, unique=True, nullable=False)
+    country: Mapped[Optional[str]] = mapped_column(VARCHAR(50), nullable=True)
     
-    is_verified: Mapped[bool] = mapped_column(nullable=False, default=False)
-    created_by_user_id: Mapped[int | None] = mapped_column(
+    current_status: Mapped[int] = mapped_column(
         INT, 
-        ForeignKey("users.user_id", ondelete="SET NULL"), 
+        ForeignKey("author_statuses.status_id", ondelete="RESTRICT"), 
+        nullable=False, 
+        default=1
+    )
+    status_until: Mapped[Optional[datetime]] = mapped_column(TIMESTAMP(timezone=True), nullable=True)
+    next_status: Mapped[Optional[int]] = mapped_column(
+        INT, 
+        ForeignKey("author_statuses.status_id", ondelete="RESTRICT"), 
         nullable=True
     )
+    
+    created_by_user_id: Mapped[Optional[int]] = mapped_column(INT, ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True)
+
+    status_rel: Mapped["AuthorStatus"] = relationship("AuthorStatus", foreign_keys=[current_status])
+    next_status_rel: Mapped[Optional["AuthorStatus"]] = relationship("AuthorStatus", foreign_keys=[next_status])
+
 
 class GroupRole(Base):
     """Модель таблицы 'group_roles' (Справочник должностей в группе)"""

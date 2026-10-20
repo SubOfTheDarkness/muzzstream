@@ -4,7 +4,8 @@
 """
 
 import os
-from pydantic_settings import BaseSettings, SettingsConfigDict, EmailStr
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import EmailStr
 from fastapi_mail import ConnectionConfig
 
 class Settings(BaseSettings):

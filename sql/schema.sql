@@ -54,12 +54,22 @@ CREATE TABLE email_confirmations (
 );
 
 
+CREATE TABLE author_statuses (
+	status_id SERIAL PRIMARY KEY,
+	status_text TEXT UNIQUE NOT NULL
+);
+INSERT INTO author_statuses (status_text) VALUES ('Unverified'), ('Verified'), ('Syntetic'), ('Limited'), ('Banned');
+
 CREATE TABLE authors (
     author_id SERIAL PRIMARY KEY,
     author_name TEXT UNIQUE NOT NULL,
     country VARCHAR(50),
-    is_verified BOOLEAN NOT NULL DEFAULT FALSE,
-    created_by_user_id INT REFERENCES users(user_id) ON DELETE SET NULL
+    current_status INT NOT NULL DEFAULT 1,
+	status_until TIMESTAMPTZ,
+	next_status INT,
+    created_by_user_id INT REFERENCES users(user_id) ON DELETE SET NULL,
+	FOREIGN KEY (current_status) REFERENCES author_statuses(status_id) ON DELETE RESTRICT,
+	FOREIGN KEY (next_status) REFERENCES author_statuses(status_id) ON DELETE RESTRICT
 );
 
 CREATE TABLE group_roles (

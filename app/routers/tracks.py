@@ -8,13 +8,13 @@ from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Depends, status, Header
 from fastapi.responses import FileResponse, StreamingResponse
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select
+from sqlalchemy import select, text
 from sqlalchemy.orm import joinedload, selectinload
 
 from app.database import get_db
 from app.models.catalog import Track, Composition, Genre, Album, genres_of_composition
 from app.models.views import TrackDetailsView
-from app.schemes.catalog import TrackResponseSchema, AlbumFullResponseSchema
+from app.schemas.catalog import TrackResponseSchema, AlbumFullResponseSchema, LogListeningRequestSchema
 
 router = APIRouter()
 
@@ -176,3 +176,31 @@ async def stream_track(
         status_code=200,
         headers=headers
     )
+
+@router.post("/listen", status_code=status.HTTP_201_CREATED)
+async def log_track_listening(
+    payload: LogListeningRequestSchema, 
+    db: AsyncSession = Depends(get_db)
+):
+    """
+    Фиксация факта прослушивания трека в истории пользователя.
+    Вызывает хранимую процедуру СУБД 'log_listening'.
+    """
+    try:
+        track = await db.get(Track, payload.track_id)
+        if not track:
+            raise HTTPException(status_code=404, detail="Трек не найден")
+
+        await db.execute(
+            text("CALL log_listening(:user_id, :track_id, :duration)"),
+            {
+                "user_id": payload.user_id,
+                "track_id": payload.track_id,
+                "duration": payload.listened_duration
+            }
+        )
+        await db.commit()
+        return {"status": "success", "message": "История зафиксирована в СУБД через процедуру"}
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=str(e))
