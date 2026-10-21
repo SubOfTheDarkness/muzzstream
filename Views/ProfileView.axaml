@@ -1,0 +1,92 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:muzzstream.ViewModels"
+             x:Class="muzzstream.Views.ProfileView"
+             x:DataType="vm:MainViewModel"
+             Background="#121212">
+    
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="30" Spacing="30" MaxWidth="600" HorizontalAlignment="Left">
+            
+            <TextBlock Text="Личный кабинет" FontSize="26" FontWeight="Bold" Foreground="#FFFFFF"/>
+
+            <Border Background="#181818" Padding="25" CornerRadius="12" BorderBrush="#282828" BorderThickness="1">
+                <Grid ColumnDefinitions="Auto, *" RowDefinitions="Auto, Auto, Auto">
+                    
+                    <Border Grid.Row="0" Grid.Column="0" Grid.RowSpan="3" 
+                            Width="90" Height="90" 
+                            Background="#282828" 
+                            CornerRadius="45" 
+                            Margin="0,0,25,0"
+                            VerticalAlignment="Top">
+                        <TextBlock Text="👤" FontSize="42" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    </Border>
+
+                    <TextBlock Grid.Row="0" Grid.Column="1" 
+                               Text="Капилов" 
+                               FontSize="24" 
+                               FontWeight="Bold" 
+                               Foreground="#FFFFFF" 
+                               VerticalAlignment="Center"/>
+
+                    <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,4,0,8" Spacing="15" VerticalAlignment="Center">
+                        <TextBlock Text="@sub" 
+                                   FontSize="16" 
+                                   Foreground="#1DB954" 
+                                   FontWeight="SemiBold"/>
+                        
+                        <Border Background="#2200CCFF" BorderBrush="#00CCFF" BorderThickness="1" CornerRadius="4" Padding="8,2" IsVisible="{Binding IsStaff}">
+                            <TextBlock Text="Модератор" FontSize="11" FontWeight="Bold" Foreground="#00CCFF"/>
+                        </Border>
+                    </StackPanel>
+
+                    <!-- Email пользователя -->
+                    <TextBlock Grid.Row="2" Grid.Column="1" 
+                               Text="sub@example.com" 
+                               FontSize="14" 
+                               Foreground="#A7A7A7"/>
+                </Grid>
+            </Border>
+
+            <Border Background="#181818" Padding="25" CornerRadius="12" BorderBrush="#282828" BorderThickness="1">
+                <StackPanel Spacing="15">
+                    <TextBlock Text="Безопасность и пароль" FontSize="18" FontWeight="SemiBold" Foreground="#FFFFFF" Margin="0,0,0,5"/>
+                    
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Текущий пароль" FontSize="12" Foreground="#A7A7A7"/>
+                        <TextBox PasswordChar="*" PlaceholderText="Введите старый пароль" Background="#242424" BorderBrush="#333333" MinWidth="220" MaxWidth="400" HorizontalAlignment="Left" Padding="10,8"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Новый пароль" FontSize="12" Foreground="#A7A7A7"/>
+                        <TextBox PasswordChar="*" PlaceholderText="Минимум 8 символов" Background="#242424" BorderBrush="#333333" MinWidth="220" MaxWidth="400" HorizontalAlignment="Left" Padding="10,8"/>
+                    </StackPanel>
+
+                    <StackPanel Spacing="6">
+                        <TextBlock Text="Повторите новый пароль" FontSize="12" Foreground="#A7A7A7"/>
+                        <TextBox PasswordChar="*" PlaceholderText="Пароли должны совпадать" Background="#242424" BorderBrush="#333333" MinWidth="220" MaxWidth="400" HorizontalAlignment="Left" Padding="10,8"/>
+                    </StackPanel>
+
+                    <Button Content="Обновить пароль" 
+                            Background="#1DB954" 
+                            Foreground="White" 
+                            FontWeight="SemiBold"
+                            Padding="20,10" 
+                            Margin="0,10,0,0"
+                            HorizontalAlignment="Left"
+                            CornerRadius="6"/>
+                </StackPanel>
+            </Border>
+
+            <Button Content="Выйти из учетной записи" 
+                    Background="Transparent" 
+                    BorderBrush="#FF3333" 
+                    BorderThickness="1"
+                    Foreground="#FF6666" 
+                    Padding="15,8" 
+                    HorizontalAlignment="Left"
+                    CornerRadius="6"/>
+
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

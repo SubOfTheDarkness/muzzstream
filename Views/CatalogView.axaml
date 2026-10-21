@@ -1,0 +1,26 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="using:muzzstream.Models"
+             x:Class="muzzstream.Views.CatalogView"
+             Background="#121212">
+    
+    <Grid RowDefinitions="Auto, *" Margin="20">
+        <TextBlock Grid.Row="0" Text="Каталог музыки" FontSize="24" FontWeight="Bold" Margin="0,0,0,15"/>
+        
+        <ListBox Grid.Row="1" x:Name="TracksListBox" Background="#181818" CornerRadius="8" Padding="5">
+            <ListBox.ItemTemplate>
+                <DataTemplate x:DataType="models:TrackModel">
+                    <Grid ColumnDefinitions="40, *, *, 80">
+                        <TextBlock Grid.Column="0" Text="▶" Foreground="#1DB954" VerticalAlignment="Center"/>
+                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                            <TextBlock Text="{Binding composition_name}" FontWeight="SemiBold"/>
+                            <TextBlock Text="{Binding authors_list}" FontSize="12" Foreground="#AAAAAA"/>
+                        </StackPanel>
+                        <TextBlock Grid.Column="2" Text="{Binding album_name}" Foreground="#AAAAAA" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="3" Text="{Binding duration}" Foreground="#AAAAAA" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                    </Grid>
+                </DataTemplate>
+            </ListBox.ItemTemplate>
+        </ListBox>
+    </Grid>
+</UserControl>

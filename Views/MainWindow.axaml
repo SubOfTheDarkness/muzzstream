@@ -1,0 +1,150 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:muzzstream.ViewModels"
+        xmlns:models="using:muzzstream.Models"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
+        x:Class="muzzstream.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="MuzzStream Player"
+        Background="#121212"
+        Foreground="#FFFFFF"
+        Width="950" Height="650"
+        WindowStartupLocation="CenterScreen">
+
+    <Design.DataContext>
+        <!-- This only sets the DataContext for the previewer in an IDE,
+             to set the actual DataContext for runtime, set the DataContext property in code (look at App.axaml.cs) -->
+        <vm:MainViewModel />
+    </Design.DataContext>
+
+    <Grid RowDefinitions="*, 90">
+        
+        <Grid Grid.Row="0">
+            
+            <ContentControl Grid.Column="0" 
+                            Content="{Binding CurrentPage}" 
+                            Margin="80, 20, 20, 20"
+                            HorizontalAlignment="Stretch"
+                            VerticalAlignment="Stretch"/>
+
+            <Border Width="{Binding SidebarWidth}" 
+                    MinWidth="60"
+                    HorizontalAlignment="Left"
+                    ZIndex="1"
+                    Background="#050505" 
+                    Padding="10, 15"
+                    PointerEntered="Border_OnPointerEntered"
+                    PointerExited="Border_OnPointerExited"
+                    ClipToBounds="True">
+                
+                <Border.Transitions>
+                    <Transitions>
+                        <DoubleTransition Property="Width" Duration="0:0:0.25" Easing="CubicEaseOut"/>
+                    </Transitions>
+                </Border.Transitions>
+                
+                <ScrollViewer HorizontalScrollBarVisibility="Disabled" VerticalScrollBarVisibility="Auto">
+                    <StackPanel Spacing="10" Width="220" HorizontalAlignment="Left">
+                        
+                        <Grid ColumnDefinitions="30, *">
+                            <TextBlock Grid.Column="0" Text="M" FontSize="22" FontWeight="Bold" Foreground="#1DB954" HorizontalAlignment="Center"/>
+                            <TextBlock Grid.Column="1" Text="UZZSTREAM" FontSize="18" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                        </Grid>
+                        
+                        <Separator Background="#282828" Margin="0,5"/>
+
+                        <Button x:Name="CatalogButton" Click="NavigationButton_Click" Background="Transparent" HorizontalAlignment="Stretch" Padding="5,8">
+                            <Grid ColumnDefinitions="30, *">
+                                <TextBlock Grid.Column="0" Text="🎵" FontSize="16" HorizontalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Каталог" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                            </Grid>
+                        </Button>
+
+                        <Button Background="Transparent" HorizontalAlignment="Stretch" Padding="5,8">
+                            <Grid ColumnDefinitions="30, *">
+                                <TextBlock Grid.Column="0" Text="📼" FontSize="16" HorizontalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Плейлисты" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                            </Grid>
+                        </Button>
+
+                        <Button Background="Transparent" HorizontalAlignment="Stretch" Padding="5,8">
+                            <Grid ColumnDefinitions="30, *">
+                                <TextBlock Grid.Column="0" Text="𝄢" FontSize="16" HorizontalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Моя Музыка" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                            </Grid>
+                        </Button>
+
+                        <Button Background="Transparent" HorizontalAlignment="Stretch" Padding="5,8">
+                            <Grid ColumnDefinitions="30, *">
+                                <TextBlock Grid.Column="0" Text="🎸" FontSize="16" HorizontalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Моя группа" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                            </Grid>
+                        </Button>
+
+                        <Separator Background="#282828" Margin="0,5"/>
+
+                        <Button x:Name="ProfileButton" Click="NavigationButton_Click" Background="Transparent" HorizontalAlignment="Stretch" Padding="5,8">
+                            <Grid ColumnDefinitions="30, *">
+                                <TextBlock Grid.Column="0" Text="👤" FontSize="16" HorizontalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Профиль" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                            </Grid>
+                        </Button>
+
+                        <Button Background="Transparent" HorizontalAlignment="Stretch" Padding="5,8">
+                            <Grid ColumnDefinitions="30, *">
+                                <TextBlock Grid.Column="0" Text="⚙️" FontSize="16" HorizontalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Настройки" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                            </Grid>
+                        </Button>
+
+                        <Button Background="#33FF3333" 
+                                BorderBrush="#FF3333" 
+                                BorderThickness="1" 
+                                HorizontalAlignment="Stretch" 
+                                Padding="5,8"
+                                IsVisible="{Binding IsStaff}">
+                            <Grid ColumnDefinitions="30, *">
+                                <TextBlock Grid.Column="0" Text="🛡️" FontSize="16" HorizontalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="Модерация" FontWeight="SemiBold" Foreground="#FF6666" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                            </Grid>
+                        </Button>
+
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+            
+        </Grid>
+
+        <Border Grid.Row="1" Background="#181818" BorderBrush="#282828" BorderThickness="0,1,0,0" Padding="15,10" ZIndex="2">
+            <Grid ColumnDefinitions="220, *, 220">
+                <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
+                    <TextBlock Text="{Binding CurrentTrackName}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding CurrentArtistName}" FontSize="12" Foreground="#1DB954" TextTrimming="CharacterEllipsis"/>
+                </StackPanel>
+
+                <Grid Grid.Column="1" RowDefinitions="Auto, Auto" HorizontalAlignment="Stretch">
+                    <StackPanel Grid.Row="0" Orientation="Horizontal" HorizontalAlignment="Center" Spacing="20" Margin="0,0,0,5">
+                        <Button Content="⏮" FontSize="16" Background="Transparent"/>
+                        <Button Content="▶" FontSize="18" Background="#1DB954" Foreground="White" CornerRadius="20" Width="40" Height="40" HorizontalContentAlignment="Center" VerticalAlignment="Center"/>
+                        <Button Content="⏭" FontSize="16" Background="Transparent"/>
+                    </StackPanel>
+                    
+                    <Grid Grid.Row="1" ColumnDefinitions="40, *, 40">
+                        <TextBlock Grid.Column="0" Text="0:00" FontSize="11" Foreground="#A7A7A7" VerticalAlignment="Center"/>
+                        <Slider Grid.Column="1" Minimum="0" Maximum="100" Value="0" Margin="10,0" Foreground="#1DB954"/>
+                        <TextBlock Grid.Column="2" Text="0:00" FontSize="11" Foreground="#A7A7A7" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                    </Grid>
+                </Grid>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Spacing="10">
+                    <TextBlock Text="🔊" VerticalAlignment="Center"/>
+                    <Slider Width="100" Minimum="0" Maximum="100" Value="70" Foreground="#FFFFFF"/>
+                </StackPanel>
+            </Grid>
+        </Border>
+        
+    </Grid>
+</Window>
