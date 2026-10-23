@@ -15,7 +15,7 @@ public static class AppSession {
         get {
             if (CurrentUser == null) return "Гость";
             int searchId = CurrentUser.role_id == 0 ? 3 : CurrentUser.role_id;
-            return StaticRoles.FirstOrDefault(r => r.role_id == searchId)?.role_name.ToUpper() ?? "Error";
+            return StaticRoles.FirstOrDefault(r => r.role_id == searchId)?.role_name ?? "Error";
         }
     }
 }

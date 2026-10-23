@@ -2,59 +2,198 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:muzzstream.ViewModels"
              x:Class="muzzstream.Views.ProfileView"
-             x:DataType="vm:MainViewModel"
+             x:DataType="vm:ProfileViewModel"
              Background="#121212">
 
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
-        <StackPanel Margin="30" Spacing="30" MaxWidth="600" HorizontalAlignment="Left">
+        <StackPanel Margin="30" Spacing="25" HorizontalAlignment="Stretch">
             
-            <TextBlock Text="Личный кабинет" FontSize="26" FontWeight="Bold" Foreground="#FFFFFF"/>
+            <TextBlock Text="Личный кабинет" FontSize="26" FontWeight="Bold" Foreground="#FFFFFF" HorizontalAlignment="Left" Margin="10,0,0,0"/>
 
-            <Border Background="#181818" Padding="25" CornerRadius="12" BorderBrush="#282828" BorderThickness="1">
-                <Grid ColumnDefinitions="Auto, *" RowDefinitions="Auto, Auto, Auto">
-                    
-                    <Border Grid.Row="0" Grid.Column="0" Grid.RowSpan="3" Width="90" Height="90" Background="#282828" CornerRadius="45" Margin="0,0,25,0" VerticalAlignment="Top">
-                        <TextBlock Text="👤" FontSize="42" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-
-                    <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CurrentUser.username}" FontSize="24" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center"/>
-
-                    <StackPanel Grid.Row="1" Grid.Column="1" Orientation="Horizontal" Margin="0,4,0,8" Spacing="15" VerticalAlignment="Center">
-                        <TextBlock Text="{Binding CurrentUser.nickname, StringFormat='@{0}'}" FontSize="16" Foreground="#1DB954" FontWeight="SemiBold"/>
+            <StackPanel Spacing="20" x:Name="StateGuest" HorizontalAlignment="Stretch" MaxWidth="800">
+                <Border Background="#181818" Padding="30" CornerRadius="12" BorderBrush="#282828" BorderThickness="1" HorizontalAlignment="Stretch">
+                    <StackPanel Spacing="15" HorizontalAlignment="Center">
+                        <TextBlock Text="Режим просмотра" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Вы вошли как гость. Авторизуйтесь, чтобы управлять плейлистами, создавать группы и публиковать свои треки." 
+                                   TextWrapping="Wrap" TextAlignment="Center" Foreground="#A7A7A7" FontSize="14"/>
                         
-                        <Border Background="#2200CCFF" BorderBrush="#00CCFF" BorderThickness="1" CornerRadius="4" Padding="8,2" x:Name="RoleBadge">
-                            <TextBlock Text="{Binding UserRoleText}" FontSize="11" FontWeight="Bold" Foreground="#00CCFF"/>
+                        <StackPanel Orientation="Horizontal" Spacing="15" HorizontalAlignment="Center" Margin="0,10,0,0">
+                            <Button x:Name="GoToLoginBtn" Click="GuestButtons_Click" Content="Войти в аккаунт" Background="#1DB954" Foreground="White" FontWeight="SemiBold" Padding="20,10" CornerRadius="6"/>
+                            <Button x:Name="GoToRegBtn" Click="GuestButtons_Click" Content="Регистрация" Background="Transparent" BorderBrush="#ffffff" BorderThickness="1" Foreground="White" Padding="20,10" CornerRadius="6"/>
+                        </StackPanel>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <StackPanel Spacing="20" x:Name="StateLoginForm" HorizontalAlignment="Stretch" MaxWidth="600">
+                <Border Background="#181818" Padding="25" CornerRadius="12" BorderBrush="#282828" BorderThickness="1" HorizontalAlignment="Stretch">
+                    <StackPanel Spacing="15">
+                        <TextBlock Text="Авторизация" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
+
+                        <StackPanel Spacing="6" HorizontalAlignment="Stretch">
+                            <TextBlock Text="Email" FontSize="12" Foreground="#A7A7A7"/>
+                            <TextBox x:Name="LoginEmailBox" PlaceholderText="example@mail.com" Background="#242424" BorderBrush="#333333" Padding="10,8" HorizontalAlignment="Stretch"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="6" HorizontalAlignment="Stretch">
+                            <TextBlock Text="Пароль" FontSize="12" Foreground="#A7A7A7"/>
+                            <TextBox x:Name="LoginPasswordBox" PasswordChar="*" Background="#242424" BorderBrush="#333333" Padding="10,8" HorizontalAlignment="Stretch"/>
+                        </StackPanel>
+
+                        <Button x:Name="SubmitLoginBtn" Click="SubmitAuthBtn_Click" Content="Войти" Background="#1DB954" Foreground="White" FontWeight="SemiBold" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="12" Margin="0,10,0,0" CornerRadius="6"/>
+                        
+                        <Button x:Name="SwitchToRegBtn" Click="SwitchModeBtn_Click" Content="Ещё нет аккаунта? Зарегистрироваться" Background="Transparent" Foreground="#1DB954" HorizontalAlignment="Center" FontSize="12"/>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
+
+            <StackPanel Spacing="20" x:Name="StateRegisterForm" HorizontalAlignment="Stretch" MaxWidth="600">
+                <Border Background="#181818" Padding="25" CornerRadius="12" BorderBrush="#282828" BorderThickness="1" HorizontalAlignment="Stretch">
+                    <StackPanel Spacing="15">
+                        <TextBlock Text="Создание аккаунта" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        
+                        <StackPanel Spacing="6" HorizontalAlignment="Stretch">
+                            <TextBlock Text="Уникальное имя пользователя" FontSize="12" Foreground="#A7A7A7"/>
+                            <TextBox x:Name="RegNicknameBox" Background="#242424" BorderBrush="#333333" Padding="10,8" HorizontalAlignment="Stretch"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="6" HorizontalAlignment="Stretch">
+                            <TextBlock Text="Отображаемое имя" FontSize="12" Foreground="#A7A7A7"/>
+                            <TextBox x:Name="RegUsernameBox" Background="#242424" BorderBrush="#333333" Padding="10,8" HorizontalAlignment="Stretch"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="6" HorizontalAlignment="Stretch">
+                            <Grid ColumnDefinitions="*, Auto">
+                                <TextBlock Grid.Column="0" Text="Электронная почта" FontSize="12" Foreground="#A7A7A7"/>
+                                <TextBlock Grid.Column="1" Text="Неверный формат" FontSize="11" Foreground="#FF3333" IsVisible="{Binding !IsEmailValid}" Margin="0,0,5,0"/>
+                            </Grid>
+                            <TextBox x:Name="RegEmailBox" Text="{Binding RegEmailInput, Mode=TwoWay}" PlaceholderText="example@mail.com" Background="#242424" BorderBrush="#333333" Padding="10,8" HorizontalAlignment="Stretch"/>
+                        </StackPanel>
+
+                        <StackPanel Spacing="6" HorizontalAlignment="Stretch">
+                            <TextBlock Text="Пароль" FontSize="12" Foreground="#A7A7A7"/>
+                            <TextBox x:Name="RegPasswordBox" Text="{Binding PasswordInput, Mode=TwoWay}" PasswordChar="●" PlaceholderText="Придумайте надежный пароль" Background="#242424" BorderBrush="#333333" Padding="10,8" HorizontalAlignment="Stretch"/>
+                        </StackPanel>
+
+                        <Border Background="#121212" Padding="12" CornerRadius="6" BorderBrush="#242424" BorderThickness="1" HorizontalAlignment="Stretch">
+                            <StackPanel Spacing="6">
+                                <TextBlock Text="Требования к паролю:" FontSize="11" FontWeight="SemiBold" Foreground="#888888" Margin="0,0,0,2"/>
+                                <Grid ColumnDefinitions="20, *">
+                                    <TextBlock Grid.Column="0" Text="✔" Foreground="#1DB954" IsVisible="{Binding HasMinLength}"/>
+                                    <TextBlock Grid.Column="0" Text="❌" Foreground="#FF3333" IsVisible="{Binding !HasMinLength}"/>
+                                    <TextBlock Grid.Column="1" Text="Длина не менее 8 символов" FontSize="11" Margin="5,0,0,0"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="20, *">
+                                    <TextBlock Grid.Column="0" Text="✔" Foreground="#1DB954" IsVisible="{Binding HasLettersAndDigits}"/>
+                                    <TextBlock Grid.Column="0" Text="❌" Foreground="#FF3333" IsVisible="{Binding !HasLettersAndDigits}"/>
+                                    <TextBlock Grid.Column="1" Text="Содержит буквы и цифры" FontSize="11" Margin="5,0,0,0"/>
+                                </Grid>
+                                <Grid ColumnDefinitions="20, *">
+                                    <TextBlock Grid.Column="0" Text="✔" Foreground="#1DB954" IsVisible="{Binding HasSpecialChar}"/>
+                                    <TextBlock Grid.Column="0" Text="❌" Foreground="#FF3333" IsVisible="{Binding !HasSpecialChar}"/>
+                                    <TextBlock Grid.Column="1" Text="Минимум 1 специальный символ (!@#$%^&amp;*...)" FontSize="11" Margin="5,0,0,0"/>
+                                </Grid>
+                            </StackPanel>
                         </Border>
+
+                        <Button x:Name="SubmitRegBtn" IsEnabled="{Binding CanRegister}" Click="SubmitAuthBtn_Click" Content="Зарегистрироваться" Background="#1DB954" Foreground="White" FontWeight="SemiBold" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="12" Margin="0,5,0,0" CornerRadius="6"/>
+                        
+                        <Button x:Name="SwitchToLoginBtn" Click="SwitchModeBtn_Click" Content="Уже есть аккаунт? Войти" Background="Transparent" Foreground="#1DB954" HorizontalAlignment="Center" FontSize="12"/>
                     </StackPanel>
+                </Border>
+            </StackPanel>
 
-                    <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding CurrentUser.email}" FontSize="14" Foreground="#A7A7A7"/>
-                </Grid>
-            </Border>
+            <StackPanel Spacing="20" x:Name="StateVerification" HorizontalAlignment="Stretch" MaxWidth="500">
+                <Border Background="#181818" Padding="25" CornerRadius="12" BorderBrush="#282828" BorderThickness="1" HorizontalAlignment="Stretch">
+                    <StackPanel Spacing="15" HorizontalAlignment="Stretch">
+                        <TextBlock Text="Подтверждение почты" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
+                        <TextBlock Text="Мы отправили код подтверждения на вашу почту. Срок действия кода — 10 минут." TextWrapping="Wrap" TextAlignment="Center" Foreground="#A7A7A7" FontSize="13"/>
+                        <TextBox x:Name="VerificationCodeBox" MaxLength="6" FontSize="24" FontWeight="Bold" HorizontalContentAlignment="Center" LetterSpacing="10" PlaceholderText="000000" Background="#242424" BorderBrush="#333333" Margin="0,15" Padding="10" HorizontalAlignment="Stretch"/>
+                        <Button x:Name="VerifyCodeBtn" Click="VerifyCodeBtn_Click" Content="Активировать аккаунт" Background="#1DB954" Foreground="White" FontWeight="SemiBold" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="12" CornerRadius="6"/>
+                        <Grid Margin="0,10,0,0">
+                            <Button x:Name="ResendCodeBtn" Click="ResendCodeBtn_Click" Content="Отправить код заново" IsEnabled="{Binding CanResend}" IsVisible="{Binding CanResend}" Background="Transparent" BorderBrush="#444" BorderThickness="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="10"/>
+                            <TextBlock Text="{Binding ResendTimer, StringFormat='Повторный запрос кода доступен через {0} сек'}" IsVisible="{Binding !CanResend}" Foreground="#A7A7A7" FontSize="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Grid>
+                    </StackPanel>
+                </Border>
+            </StackPanel>
 
-            <Border Background="#181818" Padding="25" CornerRadius="12" BorderBrush="#282828" BorderThickness="1">
-                <StackPanel Spacing="15">
-                    <TextBlock Text="Безопасность и пароль" FontSize="18" FontWeight="SemiBold" Foreground="#FFFFFF" Margin="0,0,0,5"/>
+            <Grid x:Name="StateCabinet" ColumnDefinitions="*, 30, *" HorizontalAlignment="Stretch">
+                
+                <StackPanel Grid.Column="0" Spacing="20" VerticalAlignment="Top" HorizontalAlignment="Stretch">
+                    <Border Background="#181818" Padding="25" CornerRadius="12" BorderBrush="#282828" BorderThickness="1" HorizontalAlignment="Stretch">
+                        <Grid ColumnDefinitions="Auto, *" RowDefinitions="Auto, Auto, Auto">
+                            <Border Grid.Row="0" Grid.Column="0" Grid.RowSpan="3" Width="80" Height="90" Background="#282828" CornerRadius="45" Margin="0,0,20,0" VerticalAlignment="Top">
+                                <TextBlock Text="👤" FontSize="42" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            
+                            <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding CurrentUser.username}" FontSize="24" FontWeight="Bold" Foreground="#FFFFFF" VerticalAlignment="Center" TextWrapping="Wrap"/>
+                            
+                            <WrapPanel Grid.Row="1" Grid.Column="1" Margin="0,6,0,8" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding CurrentUser.nickname, StringFormat='@{0}'}" FontSize="16" Foreground="#1DB954" FontWeight="SemiBold" Margin="0,0,10,0" VerticalAlignment="Center"/>
+                                <Border Background="#2200CCFF" BorderBrush="#00CCFF" BorderThickness="1" CornerRadius="4" Padding="6,2" x:Name="RoleBadge" VerticalAlignment="Center">
+                                    <TextBlock Text="{Binding UserRoleText}" FontSize="11" FontWeight="Bold" Foreground="#00CCFF"/>
+                                </Border>
+                            </WrapPanel>
+                            
+                            <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding CurrentUser.email}" FontSize="14" Foreground="#A7A7A7" TextWrapping="Wrap"/>
+                        </Grid>
+                    </Border>
                     
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="Текущий пароль" FontSize="12" Foreground="#A7A7A7"/>
-                        <TextBox PasswordChar="*" PlaceholderText="Введите старый пароль" Background="#242424" BorderBrush="#333333" MinWidth="220" MaxWidth="400" HorizontalAlignment="Left" Padding="10,8"/>
-                    </StackPanel>
-
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="Новый пароль" FontSize="12" Foreground="#A7A7A7"/>
-                        <TextBox PasswordChar="*" PlaceholderText="Минимум 8 символов" Background="#242424" BorderBrush="#333333" MinWidth="220" MaxWidth="400" HorizontalAlignment="Left" Padding="10,8"/>
-                    </StackPanel>
-
-                    <StackPanel Spacing="6">
-                        <TextBlock Text="Повторите новый пароль" FontSize="12" Foreground="#A7A7A7"/>
-                        <TextBox PasswordChar="*" PlaceholderText="Пароли должны совпадать" Background="#242424" BorderBrush="#333333" MinWidth="220" MaxWidth="400" HorizontalAlignment="Left" Padding="10,8"/>
-                    </StackPanel>
-
-                    <Button Content="Обновить пароль" Background="#1DB954" Foreground="White" FontWeight="SemiBold" Padding="20,10" Margin="0,10,0,0" HorizontalAlignment="Left" CornerRadius="6"/>
+                    <Button x:Name="LogoutBtn" Click="LogoutBtn_Click" Content="Выйти из учетной записи" Background="Transparent" BorderBrush="#FF3333" BorderThickness="1" Foreground="#FF6666" Padding="15,12" CornerRadius="6" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
                 </StackPanel>
-            </Border>
 
-            <Button Content="Выйти из учетной записи" Background="Transparent" BorderBrush="#FF3333" BorderThickness="1" Foreground="#FF6666" Padding="15,8" HorizontalAlignment="Left" CornerRadius="6"/>
+                <StackPanel Grid.Column="2" Spacing="20" VerticalAlignment="Top" HorizontalAlignment="Stretch">
+                    <Border Background="#181818" Padding="25" CornerRadius="12" BorderBrush="#282828" BorderThickness="1" HorizontalAlignment="Stretch">
+                        <StackPanel Spacing="15">
+                            <TextBlock Text="Безопасность и пароль" FontSize="18" FontWeight="SemiBold" Foreground="#FFFFFF" Margin="0,0,0,5"/>
+                            
+                            <StackPanel Spacing="6" HorizontalAlignment="Stretch">
+                                <TextBlock Text="Текущий пароль" FontSize="12" Foreground="#A7A7A7"/>
+                                <TextBox Text="{Binding OldPasswordInput, Mode=TwoWay}" PasswordChar="*" Background="#242424" BorderBrush="#333333" Padding="10,8" HorizontalAlignment="Stretch"/>
+                            </StackPanel>
+                            
+                            <StackPanel Spacing="6" HorizontalAlignment="Stretch">
+                                <TextBlock Text="Новый пароль" FontSize="12" Foreground="#A7A7A7"/>
+                                <TextBox Text="{Binding NewPasswordInput, Mode=TwoWay}" PasswordChar="*" Background="#242424" BorderBrush="#333333" Padding="10,8" HorizontalAlignment="Stretch"/>
+                            </StackPanel>
+                            
+                            <StackPanel Spacing="6" HorizontalAlignment="Stretch">
+                                <TextBlock Text="Повторите новый пароль" FontSize="12" Foreground="#A7A7A7"/>
+                                <TextBox Text="{Binding ConfirmPasswordInput, Mode=TwoWay}" PasswordChar="*" Background="#242424" BorderBrush="#333333" Padding="10,8" HorizontalAlignment="Stretch"/>
+                            </StackPanel>
+
+                            <Border Background="#121212" Padding="12" CornerRadius="6" BorderBrush="#242424" BorderThickness="1" HorizontalAlignment="Stretch">
+                                <StackPanel Spacing="6">
+                                    <TextBlock Text="Проверка нового пароля:" FontSize="11" FontWeight="SemiBold" Foreground="#888888" Margin="0,0,0,2"/>
+                                    <Grid ColumnDefinitions="20, *">
+                                        <TextBlock Grid.Column="0" Text="✔" Foreground="#1DB954" IsVisible="{Binding NewHasMinLength}"/>
+                                        <TextBlock Grid.Column="0" Text="❌" Foreground="#FF3333" IsVisible="{Binding !NewHasMinLength}"/>
+                                        <TextBlock Grid.Column="1" Text="Длина не менее 8 символов" FontSize="11" Margin="5,0,0,0" TextWrapping="Wrap"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="20, *">
+                                        <TextBlock Grid.Column="0" Text="✔" Foreground="#1DB954" IsVisible="{Binding NewHasLettersAndDigits}"/>
+                                        <TextBlock Grid.Column="0" Text="❌" Foreground="#FF3333" IsVisible="{Binding !NewHasLettersAndDigits}"/>
+                                        <TextBlock Grid.Column="1" Text="Содержит буквы и цифры" FontSize="11" Margin="5,0,0,0" TextWrapping="Wrap"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="20, *">
+                                        <TextBlock Grid.Column="0" Text="✔" Foreground="#1DB954" IsVisible="{Binding NewHasSpecialChar}"/>
+                                        <TextBlock Grid.Column="0" Text="❌" Foreground="#FF3333" IsVisible="{Binding !NewHasSpecialChar}"/>
+                                        <TextBlock Grid.Column="1" Text="Минимум 1 спец. символ (!@#$%^&amp;*)" FontSize="11" Margin="5,0,0,0" TextWrapping="Wrap"/>
+                                    </Grid>
+                                    <Grid ColumnDefinitions="20, *">
+                                        <TextBlock Grid.Column="0" Text="✔" Foreground="#1DB954" IsVisible="{Binding PasswordsMatch}"/>
+                                        <TextBlock Grid.Column="0" Text="❌" Foreground="#FF3333" IsVisible="{Binding !PasswordsMatch}"/>
+                                        <TextBlock Grid.Column="1" Text="Введенные пароли совпадают" FontSize="11" Margin="5,0,0,0" TextWrapping="Wrap"/>
+                                    </Grid>
+                                </StackPanel>
+                            </Border>
+                            
+                            <Button IsEnabled="{Binding CanChangePassword}" Content="Обновить пароль" Background="#1DB954" Foreground="White" FontWeight="SemiBold" Padding="20,10" CornerRadius="6" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,5,0,0"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </Grid>
 
         </StackPanel>
     </ScrollViewer>
