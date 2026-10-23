@@ -73,14 +73,14 @@
                         <Button Background="Transparent" HorizontalAlignment="Stretch" Padding="5,8">
                             <Grid ColumnDefinitions="30, *">
                                 <TextBlock Grid.Column="0" Text="𝄢" FontSize="16" HorizontalAlignment="Center"/>
-                                <TextBlock Grid.Column="1" Text="Моя Музыка" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                <TextBlock Grid.Column="1" Text="Моя музыка" VerticalAlignment="Center" Margin="10,0,0,0"/>
                             </Grid>
                         </Button>
 
                         <Button Background="Transparent" HorizontalAlignment="Stretch" Padding="5,8">
                             <Grid ColumnDefinitions="30, *">
                                 <TextBlock Grid.Column="0" Text="🎸" FontSize="16" HorizontalAlignment="Center"/>
-                                <TextBlock Grid.Column="1" Text="Моя группа" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                <TextBlock Grid.Column="1" Text="Мои группы" VerticalAlignment="Center" Margin="10,0,0,0"/>
                             </Grid>
                         </Button>
 
@@ -105,10 +105,10 @@
                                 BorderThickness="1" 
                                 HorizontalAlignment="Stretch" 
                                 Padding="5,8"
-                                IsVisible="{Binding IsStaff}">
+                                x:Name="ModerationButton">
                             <Grid ColumnDefinitions="30, *">
                                 <TextBlock Grid.Column="0" Text="🛡️" FontSize="16" HorizontalAlignment="Center"/>
-                                <TextBlock Grid.Column="1" Text="Модерация" FontWeight="SemiBold" Foreground="#FF6666" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                                <TextBlock Grid.Column="1" Text="Модерка" FontWeight="SemiBold" Foreground="#FF6666" VerticalAlignment="Center" Margin="10,0,0,0"/>
                             </Grid>
                         </Button>
 
@@ -122,7 +122,7 @@
             <Grid ColumnDefinitions="220, *, 220">
                 <StackPanel Grid.Column="0" VerticalAlignment="Center" Spacing="2">
                     <TextBlock Text="{Binding CurrentTrackName}" FontWeight="SemiBold" FontSize="14" TextTrimming="CharacterEllipsis"/>
-                    <TextBlock Text="{Binding CurrentArtistName}" FontSize="12" Foreground="#1DB954" TextTrimming="CharacterEllipsis"/>
+                    <TextBlock Text="{Binding CurrentTrackMeta}" FontSize="12" Foreground="#1DB954" TextTrimming="CharacterEllipsis"/>
                 </StackPanel>
 
                 <Grid Grid.Column="1" RowDefinitions="Auto, Auto" HorizontalAlignment="Stretch">

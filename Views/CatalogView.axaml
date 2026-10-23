@@ -17,7 +17,7 @@
                             <TextBlock Text="{Binding authors_list}" FontSize="12" Foreground="#AAAAAA"/>
                         </StackPanel>
                         <TextBlock Grid.Column="2" Text="{Binding album_name}" Foreground="#AAAAAA" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="3" Text="{Binding duration}" Foreground="#AAAAAA" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                        <TextBlock Grid.Column="3" Text="{Binding formatted_duration}" Foreground="#AAAAAA" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                     </Grid>
                 </DataTemplate>
             </ListBox.ItemTemplate>
