@@ -4,6 +4,7 @@
 """
 
 import os
+import io
 from typing import List, Optional
 from fastapi import APIRouter, HTTPException, Depends, status, Header
 from fastapi.responses import FileResponse, StreamingResponse
@@ -106,18 +107,21 @@ async def get_album_with_tracks(album_id: int, db: AsyncSession = Depends(get_db
             detail=f"Ошибка ORM при получении данных альбома: {str(e)}"
         )
 
-def get_audio_chunk_generator(file_path: str, start: int, chunk_size: int = 1024 * 512):
+def get_audio_chunk_generator(file_path: str, start: int, end: int, chunk_size: int = 1024 * 512):
     """
-    Асинхронный генератор для чтения файла порциями (чанками).
+    Асинхронный генератор для чтения файла
     """
-    with open(file_path, "rb") as video:
-        video.seek(start)
-        while True:
-            data = video.read(chunk_size)
+    with open(file_path, "rb") as audio:
+        audio.seek(start)
+        remaining_bytes = (end - start) + 1
+        
+        while remaining_bytes > 0:
+            bytes_to_read = min(chunk_size, remaining_bytes)
+            data = audio.read(bytes_to_read)
             if not data:
                 break
+            remaining_bytes -= len(data)
             yield data
-
 
 @router.get("/{track_id}/stream")
 async def stream_track(
@@ -127,7 +131,6 @@ async def stream_track(
 ) -> StreamingResponse:
     """
     Эндпоинт для потоковой передачи аудиофайла чанками.
-    Поддерживает HTTP Range Requests (код 206) для обеспечения работы буферизации и мгновенной перемотки на стороне клиента.
     """
     track = await db.get(Track, track_id)
     if not track:
@@ -145,41 +148,47 @@ async def stream_track(
         )
 
     file_size = os.path.getsize(file_path)
-    status_code = 404
 
     if range:
         range_value = range.replace("bytes=", "").split("-")
         start = int(range_value[0])
         end = int(range_value[1]) if range_value[1] else file_size - 1
         
-        if start >= file_size:
+        if start >= file_size or end >= file_size or start > end:
             raise HTTPException(
                 status_code=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE,
                 detail="Запрошенный диапазон байт недостижим"
             )
             
         chunk_size = (end - start) + 1
+        
         headers = {
             "Accept-Ranges": "bytes",
-            "Content-Length": str(file_size),
+            "Content-Length": str(chunk_size),
+            "Content-Range": f"bytes {start}-{end}/{file_size}",
             "Content-Type": "audio/mpeg",
             "Content-Disposition": "inline" 
         }
-        status_code = 206
+        
+        return StreamingResponse(
+            get_audio_chunk_generator(file_path, start, end),
+            status_code=206,
+            headers=headers
+        )
+        
     else:
         headers = {
             "Accept-Ranges": "bytes",
             "Content-Length": str(file_size),
             "Content-Type": "audio/mpeg",
         }
-        status_code = 200
-    
-    return StreamingResponse(
-        get_audio_chunk_generator(file_path, 0, file_size),
-        status_code=status_code,
-        headers=headers
-    )
-
+        
+        return StreamingResponse(
+            get_audio_chunk_generator(file_path, 0, file_size - 1),
+            status_code=200,
+            headers=headers
+        )
+        
 @router.post("/listen", status_code=status.HTTP_201_CREATED)
 async def log_track_listening(
     payload: LogListeningRequestSchema, 
