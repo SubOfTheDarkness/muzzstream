@@ -1,24 +1,24 @@
 -- СОЗДАНИЕ/ПЕРЕСОЗДАНИЕ ТАБЛИЦ И НЕМНОГО ИХ ЗАПОЛНЕНИЕ(ДЛЯ СПРАВОЧНИКОВ)
-DROP TABLE IF EXISTS roles;
-DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS sessions;
-DROP TABLE IF EXISTS email_confirmations;
-DROP TABLE IF EXISTS authors;
-DROP TABLE IF EXISTS group_roles;
-DROP TABLE IF EXISTS author_members;
-DROP TABLE IF EXISTS genres;
-DROP TABLE IF EXISTS albums;
-DROP TABLE IF EXISTS authors_of_album;
-DROP TABLE IF EXISTS genres_of_album;
-DROP TABLE IF EXISTS compositions;
-DROP TABLE IF EXISTS tracks;
-DROP TABLE IF EXISTS authors_of_composition;
-DROP TABLE IF EXISTS genres_of_composition;
-DROP TABLE IF EXISTS playlists;
-DROP TABLE IF EXISTS tracks_of_playlist;
-DROP TABLE IF EXISTS listening_history;
-DROP TABLE IF EXISTS status_codes;
-DROP TABLE IF EXISTS audit_log;
+DROP TABLE IF EXISTS roles CASCADE;
+DROP TABLE IF EXISTS users CASCADE;
+DROP TABLE IF EXISTS sessions CASCADE;
+DROP TABLE IF EXISTS email_confirmations CASCADE;
+DROP TABLE IF EXISTS authors CASCADE;
+DROP TABLE IF EXISTS group_roles CASCADE;
+DROP TABLE IF EXISTS author_members CASCADE;
+DROP TABLE IF EXISTS genres CASCADE;
+DROP TABLE IF EXISTS albums CASCADE;
+DROP TABLE IF EXISTS authors_of_album CASCADE;
+DROP TABLE IF EXISTS genres_of_album CASCADE;
+DROP TABLE IF EXISTS compositions CASCADE;
+DROP TABLE IF EXISTS tracks CASCADE;
+DROP TABLE IF EXISTS authors_of_composition CASCADE;
+DROP TABLE IF EXISTS genres_of_composition CASCADE;
+DROP TABLE IF EXISTS playlists CASCADE;
+DROP TABLE IF EXISTS tracks_of_playlist CASCADE;
+DROP TABLE IF EXISTS listening_history CASCADE;
+DROP TABLE IF EXISTS status_codes CASCADE;
+DROP TABLE IF EXISTS audit_log CASCADE;
 
 CREATE TABLE roles (
 	role_id SERIAL PRIMARY KEY,

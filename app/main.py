@@ -6,12 +6,12 @@
 
 import asyncio
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Depends, Request, status
-from sqlalchemy.ext.asyncio import AsyncSession
-from fastapi.responses import JSONResponse
 from sqlalchemy import text
+from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import FastAPI, Depends, Request, status
+from fastapi.responses import JSONResponse
 from app.database import engine, async_session_local
-from app.routers import tracks, auth, playlists
+from app.routers import tracks, auth, playlists, references
 
 CHECK_AUTHOR_STATUS_INTERVAL_SEC = 60
 
@@ -60,6 +60,7 @@ app = FastAPI(
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(tracks.router, prefix="/api/v1/tracks", tags=["Tracks"])
 app.include_router(playlists.router, prefix="/api/v1/playlists", tags=["Playlists"])
+app.include_router(references.router, prefix="/api/v1", tags=["References"])
 
 @app.middleware("http")
 async def check_db(request: Request, call_next):
@@ -89,7 +90,7 @@ async def check_db(request: Request, call_next):
         
     return await call_next(request)
 
-@app.get("/")
+@app.get("/api/v1")
 async def root() -> dict:
     """Корневой эндпоинт для проверки статуса работы сервиса"""
     return {"status": "working", "message": "Welcome to the MuzzStream Backend"}
