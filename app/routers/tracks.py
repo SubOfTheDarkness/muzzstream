@@ -19,6 +19,8 @@ from app.schemas.catalog import TrackResponseSchema, AlbumFullResponseSchema, Lo
 
 router = APIRouter()
 
+CHUNK_SIZE_BYTES = 1024 * 512 
+
 @router.get("/all", response_model=List[TrackResponseSchema])
 async def get_all_tracks(
     genre_name: Optional[str] = None, 
@@ -107,32 +109,66 @@ async def get_album_with_tracks(album_id: int, db: AsyncSession = Depends(get_db
             detail=f"Ошибка ORM при получении данных альбома: {str(e)}"
         )
 
-def get_audio_chunk_generator(file_path: str, start: int, end: int, chunk_size: int = 1024 * 512):
+def get_fixed_audio_chunk_generator(file_path: str, start: int, length: int):
     """
-    Асинхронный генератор для чтения файла
+    Генератор, который считывает из файла заданное количество байт
     """
     with open(file_path, "rb") as audio:
         audio.seek(start)
-        remaining_bytes = (end - start) + 1
-        
-        while remaining_bytes > 0:
-            bytes_to_read = min(chunk_size, remaining_bytes)
-            data = audio.read(bytes_to_read)
-            if not data:
-                break
-            remaining_bytes -= len(data)
+        data = audio.read(length)
+        if data:
             yield data
 
 @router.get("/{track_id}/stream")
-async def stream_track(track_id: int, db: AsyncSession = Depends(get_db)):
+async def stream_track(
+    track_id: int, 
+    range: Optional[str] = Header(None), 
+    db: AsyncSession = Depends(get_db)
+) -> StreamingResponse:
+    """
+    Эндпоинт, который возвращает HTTP 206 для стриминга файла
+    """
     track = await db.get(Track, track_id)
-    if not track or not os.path.exists(track.absolute_filepath):
-        raise HTTPException(status_code=404, detail="Файл не найден")
-        
-    return FileResponse(
-        path=track.absolute_filepath, 
-        media_type="audio/mpeg",
-        filename=f"track_{track_id}.mp3"
+    if not track:
+        raise HTTPException(status_code=404, detail="Запись о треке не найдена")
+
+    file_path = track.absolute_filepath
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="Аудиофайл отсутствует на сервере")
+
+    file_size = os.path.getsize(file_path)
+
+    start = 0
+    if range and range.startswith("bytes="):
+        try:
+            range_str = range.replace("bytes=", "").strip()
+            range_parts = range_str.split("-")
+            if range_parts[0]:
+                start = int(range_parts[0])
+        except ValueError:
+            pass
+
+    if start >= file_size:
+        raise HTTPException(
+            status_code=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE,
+            detail="Запрошенный диапазон байт выходит за пределы файла"
+        )
+
+    end = min(start + CHUNK_SIZE_BYTES - 1, file_size - 1)
+    actual_chunk_length = (end - start) + 1
+
+    headers = {
+        "Accept-Ranges": "bytes",
+        "Content-Type": "audio/mpeg",
+        "Content-Disposition": "inline",
+        "Content-Length": str(actual_chunk_length),
+        "Content-Range": f"bytes {start}-{end}/{file_size}"
+    }
+
+    return StreamingResponse(
+        get_fixed_audio_chunk_generator(file_path, start, actual_chunk_length),
+        status_code=206,
+        headers=headers
     )
 
 @router.post("/listen", status_code=status.HTTP_201_CREATED)
