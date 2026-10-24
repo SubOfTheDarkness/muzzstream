@@ -124,71 +124,17 @@ def get_audio_chunk_generator(file_path: str, start: int, end: int, chunk_size: 
             yield data
 
 @router.get("/{track_id}/stream")
-async def stream_track(
-    track_id: int, 
-    range: Optional[str] = Header(None), 
-    db: AsyncSession = Depends(get_db)
-) -> StreamingResponse:
-    """
-    Эндпоинт для потоковой передачи аудиофайла чанками.
-    """
+async def stream_track(track_id: int, db: AsyncSession = Depends(get_db)):
     track = await db.get(Track, track_id)
-    if not track:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail="Запись о треке не найдена в базе данных"
-        )
+    if not track or not os.path.exists(track.absolute_filepath):
+        raise HTTPException(status_code=404, detail="Файл не найден")
+        
+    return FileResponse(
+        path=track.absolute_filepath, 
+        media_type="audio/mpeg",
+        filename=f"track_{track_id}.mp3"
+    )
 
-    file_path = track.absolute_filepath
-
-    if not os.path.exists(file_path):
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, 
-            detail="Аудиофайл отсутствует на сервере"
-        )
-
-    file_size = os.path.getsize(file_path)
-
-    if range:
-        range_value = range.replace("bytes=", "").split("-")
-        start = int(range_value[0])
-        end = int(range_value[1]) if range_value[1] else file_size - 1
-        
-        if start >= file_size or end >= file_size or start > end:
-            raise HTTPException(
-                status_code=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE,
-                detail="Запрошенный диапазон байт недостижим"
-            )
-            
-        chunk_size = (end - start) + 1
-        
-        headers = {
-            "Accept-Ranges": "bytes",
-            "Content-Length": str(chunk_size),
-            "Content-Range": f"bytes {start}-{end}/{file_size}",
-            "Content-Type": "audio/mpeg",
-            "Content-Disposition": "inline" 
-        }
-        
-        return StreamingResponse(
-            get_audio_chunk_generator(file_path, start, end),
-            status_code=206,
-            headers=headers
-        )
-        
-    else:
-        headers = {
-            "Accept-Ranges": "bytes",
-            "Content-Length": str(file_size),
-            "Content-Type": "audio/mpeg",
-        }
-        
-        return StreamingResponse(
-            get_audio_chunk_generator(file_path, 0, file_size - 1),
-            status_code=200,
-            headers=headers
-        )
-        
 @router.post("/listen", status_code=status.HTTP_201_CREATED)
 async def log_track_listening(
     payload: LogListeningRequestSchema, 
