@@ -145,6 +145,7 @@ async def stream_track(
         )
 
     file_size = os.path.getsize(file_path)
+    status_code = 404
 
     if range:
         range_value = range.replace("bytes=", "").split("-")
@@ -164,16 +165,18 @@ async def stream_track(
             "Content-Type": "audio/mpeg",
             "Content-Disposition": "inline" 
         }
+        status_code = 206
     else:
         headers = {
             "Accept-Ranges": "bytes",
             "Content-Length": str(file_size),
             "Content-Type": "audio/mpeg",
         }
+        status_code = 200
     
     return StreamingResponse(
         get_audio_chunk_generator(file_path, 0, file_size),
-        status_code=200,
+        status_code=status_code,
         headers=headers
     )
 
