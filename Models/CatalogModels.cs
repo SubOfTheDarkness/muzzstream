@@ -25,4 +25,12 @@ public class TrackModel {
     public string album_name { get; set; } = string.Empty;
 
     public string formatted_duration => $"{duration / 60}:{duration % 60:D2}";
+
+    private string _uiPlayIcon = "?";
+    public string ui_play_icon {
+        get => _uiPlayIcon;
+        set {
+            _uiPlayIcon = value;
+        }
+    }
 }

@@ -64,7 +64,7 @@ public partial class ProfileView : UserControl {
             username = "Капилов",
             nickname = "sub",
             email = _savedEmail,
-            role_id = 2 
+            role_id = 1
         };
 
         _viewModel.ProfileState = 4;

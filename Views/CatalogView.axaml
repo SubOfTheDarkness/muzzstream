@@ -1,26 +1,92 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:models="using:muzzstream.Models"
+             xmlns:vm="using:muzzstream.ViewModels"
              x:Class="muzzstream.Views.CatalogView"
+             x:DataType="vm:MainViewModel"
              Background="#121212">
     
-    <Grid RowDefinitions="Auto, *" Margin="20">
-        <TextBlock Grid.Row="0" Text="Каталог музыки" FontSize="24" FontWeight="Bold" Margin="0,0,0,15"/>
-        
-        <ListBox Grid.Row="1" x:Name="TracksListBox" Background="#181818" CornerRadius="8" Padding="5">
-            <ListBox.ItemTemplate>
-                <DataTemplate x:DataType="models:TrackModel">
-                    <Grid ColumnDefinitions="40, *, *, 80">
-                        <TextBlock Grid.Column="0" Text="▶" Foreground="#1DB954" VerticalAlignment="Center"/>
-                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
-                            <TextBlock Text="{Binding composition_name}" FontWeight="SemiBold"/>
-                            <TextBlock Text="{Binding authors_list}" FontSize="12" Foreground="#AAAAAA"/>
-                        </StackPanel>
-                        <TextBlock Grid.Column="2" Text="{Binding album_name}" Foreground="#AAAAAA" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="3" Text="{Binding formatted_duration}" Foreground="#AAAAAA" VerticalAlignment="Center" HorizontalAlignment="Right"/>
-                    </Grid>
-                </DataTemplate>
-            </ListBox.ItemTemplate>
-        </ListBox>
-    </Grid>
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="25" Spacing="25">
+            
+            <StackPanel Spacing="10">
+                <TextBlock Text="Поиск" FontSize="24" FontWeight="Bold" Foreground="#FFFFFF"/>
+                <TextBox Text="{Binding SearchQuery, Mode=TwoWay}"
+                         Background="#242424" BorderBrush="#333333" Foreground="White"
+                         Padding="12,10" CornerRadius="8"/>
+            </StackPanel>
+
+            <StackPanel IsVisible="{Binding IsSearchResultsVisible}" Spacing="20">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Исполнители" FontSize="16" FontWeight="SemiBold" Foreground="#1DB954"/>
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding FoundArtists}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="15"/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#181818" Padding="15,10" CornerRadius="20" BorderBrush="#282828" BorderThickness="1">
+                                        <TextBlock Text="{Binding}" Foreground="White" FontWeight="Medium"/>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </StackPanel>
+
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Альбомы" FontSize="16" FontWeight="SemiBold" Foreground="#1DB954"/>
+                    <ScrollViewer HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+                        <ItemsControl ItemsSource="{Binding FoundAlbums}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate><StackPanel Orientation="Horizontal" Spacing="15"/></ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Border Background="#181818" Padding="20,15" CornerRadius="8" BorderBrush="#282828" BorderThickness="1" Width="140">
+                                        <StackPanel Spacing="5">
+                                            <TextBlock Text="D" FontSize="24" HorizontalAlignment="Center"/>
+                                            <TextBlock Text="{Binding}" Foreground="White" FontWeight="SemiBold" TextAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </Border>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </ScrollViewer>
+                </StackPanel>
+            </StackPanel>
+
+            <StackPanel Spacing="15">
+                <Grid IsVisible="{Binding IsTopTracksVisible}" ColumnDefinitions="*, Auto">
+                    <TextBlock Grid.Column="0" Text="Популярное (Топ 100)" FontSize="20" FontWeight="Bold" Foreground="#FFFFFF"/>
+                </Grid>
+                
+                <ItemsControl ItemsSource="{Binding DisplayedTracks}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><StackPanel Spacing="6"/></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:TrackModel">
+                            <Border Background="#181818" CornerRadius="6" Padding="12,8" BorderBrush="#242424" BorderThickness="1">
+                                <Grid ColumnDefinitions="45, *, *, 80">
+                                    <Button Grid.Column="0" Width="32" Height="32" CornerRadius="16" Background="#282828"
+                                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                            Click="TrackPlayButton_Click" CommandParameter="{Binding}">
+                                        <TextBlock Text=">" Foreground="#1DB954" FontWeight="Bold" FontSize="12"/>
+                                    </Button>
+                                    <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="10,0,0,0">
+                                        <TextBlock Text="{Binding composition_name}" FontWeight="SemiBold" Foreground="White"/>
+                                        <TextBlock Text="{Binding authors_list}" FontSize="12" Foreground="#AAAAAA"/>
+                                    </StackPanel>
+                                    <TextBlock Grid.Column="2" Text="{Binding album_name}" Foreground="#AAAAAA" VerticalAlignment="Center"/>
+                                    <TextBlock Grid.Column="3" Text="{Binding formatted_duration}" Foreground="#AAAAAA" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
 </UserControl>
