@@ -1,3 +1,4 @@
+using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
@@ -15,7 +16,6 @@ public partial class MainWindow : Window {
     private readonly ProfileView _profileView = new();
     private DispatcherTimer? _trackProgressTimer;
     private int _currentTrackDurationSec = 0;
-    private double _secondsElapsed = 0;
 
     public MainWindow() {
         InitializeComponent();
@@ -36,7 +36,10 @@ public partial class MainWindow : Window {
                 vm.CurrentPage = _catalogView;
 
                 bool isServerAlive = await ApiService.PingServerAsync();
-                if (!isServerAlive) return;
+                if (!isServerAlive) {
+                    ShowErrorWindow("Нет связи с сервером", "Не удалось установить сетевое соединение с сервером MuzzStream.\nПроверьте Ваши настройки сети, возможно, у Вас нет доступа к Интернету.\nЛибо сервер Muzzstream на техработах.");
+                    return;
+                }
 
                 try {
                     await ApiService.LoadAllSystemLookupsAsync();
@@ -44,10 +47,31 @@ public partial class MainWindow : Window {
                     ModerationButton.IsVisible = vm.CurrentUser?.role_id > 0;
                 }
                 catch (Exception ex) {
-                    System.Diagnostics.Debug.WriteLine($"Ошибка при создании root окна: {ex.Message}");
+                    System.Diagnostics.Debug.WriteLine($"Ошибка конфигурации СУБД: {ex.Message}");
+                    ShowErrorWindow("Ошибка конфигурации СУБД", "Связь с сервером есть, но СУБД вернула некорректную структуру данных справочников.");
                 }
             }
         };
+    }
+
+    private void ShowErrorWindow(string title, string message) {
+        var errorWindow = new Window {
+            Title = title,
+            Width = 430, Height = 190,
+            WindowStartupLocation = WindowStartupLocation.CenterScreen,
+            Background = new Avalonia.Media.SolidColorBrush(Avalonia.Media.Color.Parse("#121212")),
+            Content = new StackPanel {
+                Margin = new Thickness(20),
+                Spacing = 15,
+                VerticalAlignment = Avalonia.Layout.VerticalAlignment.Center,
+                Children = {
+                    new TextBlock { Text = $"❌ {title}", FontSize = 18, FontWeight = Avalonia.Media.FontWeight.Bold, Foreground = Avalonia.Media.Brushes.Red, HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center },
+                    new TextBlock { Text = message, TextWrapping = Avalonia.Media.TextWrapping.Wrap, TextAlignment = Avalonia.Media.TextAlignment.Center, Foreground = Avalonia.Media.Brushes.White },
+                    new Button { Content = "Закрыть плеер", HorizontalAlignment = Avalonia.Layout.HorizontalAlignment.Center, Padding = new Thickness(20, 5), Background = Avalonia.Media.Brushes.DarkRed, Command = new CommunityToolkit.Mvvm.Input.RelayCommand(() => Environment.Exit(0)) }
+                }
+            }
+        };
+        errorWindow.ShowDialog(this);
     }
 
     private void InitProgressTimer() {
@@ -57,23 +81,34 @@ public partial class MainWindow : Window {
 
     private void TrackProgressTimer_Tick(object? sender, EventArgs e) {
         if (AudioPlayerService.IsPlaying && _currentTrackDurationSec > 0) {
-            _secondsElapsed++;
-            if (_secondsElapsed > _currentTrackDurationSec) _secondsElapsed = _currentTrackDurationSec;
+            TimeSpan realPosition = AudioPlayerService.GetCurrentPosition();
+            double totalSeconds = realPosition.TotalSeconds;
+
+            if (totalSeconds > _currentTrackDurationSec) totalSeconds = _currentTrackDurationSec;
 
             Dispatcher.UIThread.Post(() => {
-                double percentage = (_secondsElapsed / _currentTrackDurationSec) * 100;
+                double percentage = (totalSeconds / _currentTrackDurationSec) * 100;
                 TrackProgressSlider.Value = Math.Clamp(percentage, 0, 100);
 
-                int mins = (int)_secondsElapsed / 60;
-                int secs = (int)_secondsElapsed % 60;
+                int mins = (int)totalSeconds / 60;
+                int secs = (int)totalSeconds % 60;
                 CurrentTimeText.Text = $"{mins}:{secs:D2}";
             });
         }
     }
 
+    private void TrackProgressSlider_PointerCaptureLost(object? sender, Avalonia.Input.PointerCaptureLostEventArgs e) {
+        if (AudioPlayerService.CurrentTrackId != -1 && _currentTrackDurationSec > 0) {
+            
+            double targetSeconds = _currentTrackDurationSec * (TrackProgressSlider.Value / 100.0);
+            AudioPlayerService.SeekToSeconds(targetSeconds);
+            
+            TrackProgressTimer_Tick(null, EventArgs.Empty);
+        }
+    }
+
     public void InitTrackTimer(int durationSeconds, string formattedDuration) {
         _currentTrackDurationSec = durationSeconds;
-        _secondsElapsed = 0;
 
         Dispatcher.UIThread.Post(() => {
             TotalTimeText.Text = formattedDuration;
@@ -85,6 +120,22 @@ public partial class MainWindow : Window {
         if (!_trackProgressTimer!.IsEnabled) _trackProgressTimer.Start();
     }
 
+    public void UpdateBottomPlayer(string trackName, string trackMeta, int durationSeconds, string formattedDuration) {
+        BottomTrackNameText.Text = trackName;
+        BottomTrackMetaText.Text = trackMeta;
+        
+        _currentTrackDurationSec = durationSeconds;
+
+        TotalTimeText.Text = formattedDuration;
+        CurrentTimeText.Text = "0:00";
+        TrackProgressSlider.Value = 0;
+        PlayPauseButton.Content = "||"; 
+
+        if (!_trackProgressTimer!.IsEnabled) {
+            _trackProgressTimer.Start();
+        }
+    }
+
     private void PlayPauseButton_Click(object? sender, RoutedEventArgs e) {
         AudioPlayerService.TogglePlayPause();
         bool playing = AudioPlayerService.IsPlaying;
@@ -93,24 +144,6 @@ public partial class MainWindow : Window {
         
         if (_catalogView != null) {
             _catalogView.SyncActiveGridButtonIcon(playing);
-        }
-    }
-
-    public void UpdateBottomPlayer(string trackName, string trackMeta, int durationSeconds, string formattedDuration) {
-        BottomTrackNameText.Text = trackName;
-        BottomTrackMetaText.Text = trackMeta;
-        
-        _currentTrackDurationSec = durationSeconds;
-        _secondsElapsed = 0;
-
-        TotalTimeText.Text = formattedDuration;
-        CurrentTimeText.Text = "0:00";
-        TrackProgressSlider.Value = 0;
-
-        PlayPauseButton.Content = "||"; 
-
-        if (!_trackProgressTimer!.IsEnabled) {
-            _trackProgressTimer.Start();
         }
     }
 

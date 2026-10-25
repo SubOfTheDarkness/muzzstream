@@ -13,12 +13,23 @@ public partial class CatalogView : UserControl {
     public CatalogView() {
         InitializeComponent();
     }
+    private async void RefreshCatalogBtn_Click(object? sender, RoutedEventArgs e) {
+        try {
+            if (DataContext is MainViewModel mainVm) {
+                await mainVm.InitializeCatalogAsync();
+                System.Diagnostics.Debug.WriteLine("Каталог успешно обновлен.");
+            }
+        }
+        catch (System.Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Ошибка запроса к серверу: {ex.Message}");
+        }
+    }
 
-    private void TrackPlayButton_Click(object? sender, RoutedEventArgs e) {
+    private async void TrackPlayButton_Click(object? sender, RoutedEventArgs e) {
         if (sender is Button clickedButton && clickedButton.Content is TextBlock currentIconText) {
             var clickedTrack = clickedButton.CommandParameter as TrackModel;
             if (clickedTrack == null) return;
-
             System.Diagnostics.Debug.WriteLine($"Проигрывается(id): {clickedTrack.track_id}");
 
             if (_lastActiveTrack != null && _lastActiveTrack.track_id == clickedTrack.track_id) {
@@ -37,7 +48,7 @@ public partial class CatalogView : UserControl {
                 oldIconText.Text = ">";
             }
 
-            AudioPlayerService.PlayTrack(clickedTrack.track_id);
+            await AudioPlayerService.PlayTrack(clickedTrack.track_id);
             
             currentIconText.Text = "||";
 

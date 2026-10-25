@@ -128,7 +128,7 @@
                     
                     <Grid Grid.Row="1" ColumnDefinitions="40, *, 40">
                         <TextBlock x:Name="CurrentTimeText" Grid.Column="0" Text="0:00" FontSize="11" Foreground="#A7A7A7" VerticalAlignment="Center"/>
-                        <Slider x:Name="TrackProgressSlider" Grid.Column="1" Minimum="0" Maximum="100" Value="0" Margin="10,0" Foreground="#1DB954"/>
+                        <Slider x:Name="TrackProgressSlider" PointerCaptureLost="TrackProgressSlider_PointerCaptureLost" Grid.Column="1" Minimum="0" Maximum="100" Value="0" Margin="10,0" Foreground="#1DB954"/>
                         <TextBlock x:Name="TotalTimeText" Grid.Column="2" Text="0:00" FontSize="11" Foreground="#A7A7A7" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                     </Grid>
                 </Grid>
