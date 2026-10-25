@@ -19,11 +19,38 @@ from app.schemas.auth import (
     UserRegisterRequestSchema, 
     UserLoginRequestSchema, 
     TokenResponseSchema,
-    EmailConfirmRequestSchema
+    EmailConfirmRequestSchema,
+    PasswordResetRequestSchema
 )
 
 router = APIRouter()
 
+async def send_password_reset_email(email: str, new_password: str):
+    html_content = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif; text-align: center; padding: 20px;">
+            <div style="max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px;">
+                <h2 style="color: #FF3333;">Сброс пароля MuzzStream</h2>
+                <p>Ваш временный пароль для входа в систему:</p>
+                <div style="font-size: 24px; font-weight: bold; color: #333; margin: 20px 0; padding: 10px; background: #eee; border-radius: 5px;">
+                    {new_password}
+                </div>
+                <p style="font-size: 12px; color: #777;">После входа в личный кабинет настоятельно рекомендуем сразу изменить его в целях безопасности.</p>
+            </div>
+        </body>
+    </html>
+    """
+    try:
+        message = MessageSchema(
+            subject="Восстановление доступа MuzzStream",
+            recipients=[email],
+            body=html_content,
+            subtype=MessageType.html
+        )
+        fm = FastMail(settings.mail_config)
+        await fm.send_message(message)
+    except Exception as ex:
+        print(f"[SMTP_RESET_ERR] {str(ex)}")
 
 async def send_verification_email(email: str, code: str, is_new_register: bool = True):
     """
@@ -185,17 +212,21 @@ async def login_user(payload: UserLoginRequestSchema, request: Request, db: Asyn
     """Авторизация пользователя"""
     client_ip = request.client.host if request.client else "127.0.0.1"
 
-    user_stmt = select(User).where(User.email == payload.email)
-    user_result = await db.execute(user_stmt)
-    user = user_result.scalars().first()
+    if "@" in payload.identity:
+        stmt = select(User).where(User.email == payload.identity.strip())
+    else:
+        stmt = select(User).where(User.nickname == payload.identity.strip())
+        
+    result = await db.execute(stmt)
+    user = result.scalars().first()
 
     if not user or not verify_password(payload.password, user.password):
         await db.execute(
             text("INSERT INTO audit_log (user_id, operation, operation_status) VALUES (NULL, :op, 2)"),
-            {"op": f"FAILED_LOGIN_ATTEMPT_FOR_EMAIL_{payload.email}"}
+            {"op": f"FAILED_LOGIN_ATTEMPT_FOR_{payload.identity}"}
         )
         await db.commit()
-        raise HTTPException(status_code=401, detail="Неверная электронная почта или пароль")
+        raise HTTPException(status_code=401, detail="Неверный никнейм/почта или пароль")
 
     if not user.is_verified:
         verification_code = "".join(secrets.choice("0123456789") for _ in range(6))
@@ -203,36 +234,17 @@ async def login_user(payload: UserLoginRequestSchema, request: Request, db: Asyn
 
         await db.execute(delete(EmailConfirmation).where(EmailConfirmation.email == user.email))
         await db.commit()
-        
-        db_code = EmailConfirmation(
-            email=user.email,
-            code=verification_code,
-            expires_at=expiration_time
-        )
+        db_code = EmailConfirmation(email=user.email, code=verification_code, expires_at=expiration_time)
         db.add(db_code)
         
         await send_verification_email(user.email, verification_code, is_new_register=False)
         await db.commit()
-
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN, 
-            detail="UNVERIFIED_EMAIL"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="UNVERIFIED_EMAIL")
 
     try:
         session_token = secrets.token_hex(32)
-        new_session = Session(
-            token=session_token,
-            user_id=user.user_id,
-            device_name=payload.device_name,
-            ip_address=client_ip
-        )
+        new_session = Session(token=session_token, user_id=user.user_id, device_name=payload.device_name, ip_address=client_ip)
         db.add(new_session)
-
-        await db.execute(
-            text("INSERT INTO audit_log (user_id, operation, operation_status) VALUES (:uid, 'USER_LOGIN', 1)"),
-            {"uid": user.user_id}
-        )
         await db.commit()
 
         return {
@@ -243,7 +255,36 @@ async def login_user(payload: UserLoginRequestSchema, request: Request, db: Asyn
             "email": user.email,
             "role_id": user.role_id
         }
-
     except Exception as e:
         await db.rollback()
-        raise HTTPException(status_code=500, detail=f"Ошибка СУБД при обработке сессии: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Ошибка СУБД сессии: {str(e)}")
+
+
+
+@router.post("/reset-password", status_code=status.HTTP_200_OK)
+async def reset_password(payload: PasswordResetRequestSchema, db: AsyncSession = Depends(get_db)):
+    """Генерация временного пароля и отправка"""
+    if "@" in payload.identity:
+        stmt = select(User).where(User.email == payload.identity.strip())
+    else:
+        stmt = select(User).where(User.nickname == payload.identity.strip())
+        
+    result = await db.execute(stmt)
+    user = result.scalars().first()
+
+    if not user:
+        raise HTTPException(status_code=404, detail="Пользователь с таким никнеймом не найден в системе.")
+
+    chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ23456789"
+    temp_password = "".join(secrets.choice(chars) for _ in range(8)) + "!"
+
+    try:
+        user.password = hash_password(temp_password)
+        await db.commit()
+
+        await send_password_reset_email(user.email, temp_password)
+
+        return {"status": "success", "message": "Новый пароль успешно отправлен на вашу почту."}
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Ошибка при сбросе пароля: {str(e)}")
