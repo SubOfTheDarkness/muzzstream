@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using muzzstream.Models;
-
+using Avalonia.Media;
 namespace muzzstream.ViewModels;
 
 public class ProfileViewModel : INotifyPropertyChanged {
@@ -15,6 +15,9 @@ public class ProfileViewModel : INotifyPropertyChanged {
     
     private string _regEmailInput = string.Empty;
     private string _passwordInput = string.Empty;
+
+    private string _loginIdentityInput = string.Empty;
+    private string _loginPasswordInput = string.Empty;
     
     private bool _isEmailValid = false;
     private bool _hasMinLength = false;
@@ -35,6 +38,30 @@ public class ProfileViewModel : INotifyPropertyChanged {
 
     public string UserRoleText => AppSession.RoleText;
 
+    private string _statusMessage = string.Empty;
+    private IBrush _statusColor = Brushes.Gray;
+
+    public string StatusMessage {
+        get => _statusMessage;
+        set { _statusMessage = value; OnPropertyChanged(); }
+    }
+
+    public IBrush StatusColor {
+        get => _statusColor;
+        set { _statusColor = value; OnPropertyChanged(); }
+    }
+
+    public void SetStatus(string message, string type = "info") {
+        StatusMessage = message;
+        
+        StatusColor = type.ToLower() switch {
+            "success" => SolidColorBrush.Parse("#1DB954"),
+            "warning" => SolidColorBrush.Parse("#FFB300"),
+            "error"   => SolidColorBrush.Parse("#FF3333"),
+            _         => SolidColorBrush.Parse("#A7A7A7")
+        };
+    }
+
     public int ProfileState {
         get => _profileState;
         set 
@@ -44,6 +71,23 @@ public class ProfileViewModel : INotifyPropertyChanged {
         }
     }
 
+    public string LoginIdentityInput {
+        get => _loginIdentityInput;
+        set { _loginIdentityInput = value; OnPropertyChanged(); }
+    }
+
+    public string LoginPasswordInput {
+        get => _loginPasswordInput;
+        set { _loginPasswordInput = value; OnPropertyChanged(); }
+    }
+
+    public void ClearPasswords() {
+        PasswordInput = string.Empty;
+        LoginPasswordInput = string.Empty;
+        OldPasswordInput = string.Empty;
+        NewPasswordInput = string.Empty;
+        ConfirmPasswordInput = string.Empty;
+    }
 
     public string RegEmailInput {
         get => _regEmailInput;

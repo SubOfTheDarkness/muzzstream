@@ -26,28 +26,30 @@
             </StackPanel>
 
             <StackPanel Spacing="20" x:Name="StateLoginForm" HorizontalAlignment="Stretch" MaxWidth="600">
+                <Button Content="←" Click="BackToGuest_Click" Background="Transparent" Foreground="#888" Margin="0,0,0,5" HorizontalAlignment="Left"/>
                 <Border Background="#181818" Padding="25" CornerRadius="12" BorderBrush="#282828" BorderThickness="1" HorizontalAlignment="Stretch">
                     <StackPanel Spacing="15">
                         <TextBlock Text="Авторизация" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
 
                         <StackPanel Spacing="6" HorizontalAlignment="Stretch">
-                            <TextBlock Text="Email" FontSize="12" Foreground="#A7A7A7"/>
-                            <TextBox x:Name="LoginEmailBox" PlaceholderText="example@mail.com" Background="#242424" BorderBrush="#333333" Padding="10,8" HorizontalAlignment="Stretch"/>
+                            <TextBlock Text="Email или никнейм" FontSize="12" Foreground="#A7A7A7"/>
+                            <TextBox x:Name="LoginIdentityBox" Text="{Binding LoginIdentityInput, Mode=TwoWay}" PlaceholderText="example@mail.com" Background="#242424" BorderBrush="#333333" Padding="10,8" HorizontalAlignment="Stretch"/>
                         </StackPanel>
 
                         <StackPanel Spacing="6" HorizontalAlignment="Stretch">
                             <TextBlock Text="Пароль" FontSize="12" Foreground="#A7A7A7"/>
-                            <TextBox x:Name="LoginPasswordBox" PasswordChar="*" Background="#242424" BorderBrush="#333333" Padding="10,8" HorizontalAlignment="Stretch"/>
+                            <TextBox x:Name="LoginPasswordBox" Text="{Binding LoginPasswordInput, Mode=TwoWay}" PasswordChar="*" Background="#242424" BorderBrush="#333333" Padding="10,8" HorizontalAlignment="Stretch"/>
                         </StackPanel>
-
+                        <TextBlock Text="{Binding StatusMessage}" Foreground="{Binding StatusColor}" FontSize="12" HorizontalAlignment="Center" TextWrapping="Wrap" IsVisible="{Binding !!StatusMessage}"/>
                         <Button x:Name="SubmitLoginBtn" Click="SubmitAuthBtn_Click" Content="Войти" Background="#1DB954" Foreground="White" FontWeight="SemiBold" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="12" Margin="0,10,0,0" CornerRadius="6"/>
-                        
+                        <Button Click="ForgotPasswordBtn_Click" Content="Забыли пароль?" Background="#888888" HorizontalAlignment="Center" FontSize="11"/>
                         <Button x:Name="SwitchToRegBtn" Click="SwitchModeBtn_Click" Content="Ещё нет аккаунта? Зарегистрироваться" Background="Transparent" Foreground="#1DB954" HorizontalAlignment="Center" FontSize="12"/>
                     </StackPanel>
                 </Border>
             </StackPanel>
 
             <StackPanel Spacing="20" x:Name="StateRegisterForm" HorizontalAlignment="Stretch" MaxWidth="600">
+                <Button Content="←" Click="BackToGuest_Click" Background="Transparent" Foreground="#888" Margin="0,0,0,5" HorizontalAlignment="Left"/>
                 <Border Background="#181818" Padding="25" CornerRadius="12" BorderBrush="#282828" BorderThickness="1" HorizontalAlignment="Stretch">
                     <StackPanel Spacing="15">
                         <TextBlock Text="Создание аккаунта" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
@@ -95,7 +97,7 @@
                                 </Grid>
                             </StackPanel>
                         </Border>
-
+                        <TextBlock Text="{Binding StatusMessage}" Foreground="{Binding StatusColor}" FontSize="12" HorizontalAlignment="Center" TextWrapping="Wrap" IsVisible="{Binding !!StatusMessage}"/>
                         <Button x:Name="SubmitRegBtn" IsEnabled="{Binding CanRegister}" Click="SubmitAuthBtn_Click" Content="Зарегистрироваться" Background="#1DB954" Foreground="White" FontWeight="SemiBold" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="12" Margin="0,5,0,0" CornerRadius="6"/>
                         
                         <Button x:Name="SwitchToLoginBtn" Click="SwitchModeBtn_Click" Content="Уже есть аккаунт? Войти" Background="Transparent" Foreground="#1DB954" HorizontalAlignment="Center" FontSize="12"/>
@@ -104,11 +106,13 @@
             </StackPanel>
 
             <StackPanel Spacing="20" x:Name="StateVerification" HorizontalAlignment="Stretch" MaxWidth="500">
+                <Button Content="←" Click="BackToLogin_Click" Background="Transparent" Foreground="#888" Margin="0,0,0,5" HorizontalAlignment="Left"/>
                 <Border Background="#181818" Padding="25" CornerRadius="12" BorderBrush="#282828" BorderThickness="1" HorizontalAlignment="Stretch">
                     <StackPanel Spacing="15" HorizontalAlignment="Stretch">
                         <TextBlock Text="Подтверждение почты" FontSize="20" FontWeight="Bold" HorizontalAlignment="Center"/>
                         <TextBlock Text="Мы отправили код подтверждения на вашу почту. Срок действия кода — 10 минут." TextWrapping="Wrap" TextAlignment="Center" Foreground="#A7A7A7" FontSize="13"/>
                         <TextBox x:Name="VerificationCodeBox" MaxLength="6" FontSize="24" FontWeight="Bold" HorizontalContentAlignment="Center" LetterSpacing="10" PlaceholderText="000000" Background="#242424" BorderBrush="#333333" Margin="0,15" Padding="10" HorizontalAlignment="Stretch"/>
+                        <TextBlock Text="{Binding StatusMessage}" Foreground="{Binding StatusColor}" FontSize="12" HorizontalAlignment="Center" TextWrapping="Wrap" IsVisible="{Binding !!StatusMessage}"/>
                         <Button x:Name="VerifyCodeBtn" Click="VerifyCodeBtn_Click" Content="Активировать аккаунт" Background="#1DB954" Foreground="White" FontWeight="SemiBold" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="12" CornerRadius="6"/>
                         <Grid Margin="0,10,0,0">
                             <Button x:Name="ResendCodeBtn" Click="ResendCodeBtn_Click" Content="Отправить код заново" IsEnabled="{Binding CanResend}" IsVisible="{Binding CanResend}" Background="Transparent" BorderBrush="#444" BorderThickness="1" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Padding="10"/>
@@ -188,8 +192,8 @@
                                     </Grid>
                                 </StackPanel>
                             </Border>
-                            
-                            <Button IsEnabled="{Binding CanChangePassword}" Content="Обновить пароль" Background="#1DB954" Foreground="White" FontWeight="SemiBold" Padding="20,10" CornerRadius="6" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,5,0,0"/>
+                            <TextBlock Text="{Binding StatusMessage}" Foreground="{Binding StatusColor}" FontSize="12" HorizontalAlignment="Center" TextWrapping="Wrap" IsVisible="{Binding !!StatusMessage}"/>
+                            <Button IsEnabled="{Binding CanChangePassword}" x:Name="UpdatePasswordBtn" Click="UpdatePasswordBtn_Click" Content="Обновить пароль" Background="#1DB954" Foreground="White" FontWeight="SemiBold" Padding="20,10" CornerRadius="6" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Margin="0,5,0,0"/>
                         </StackPanel>
                     </Border>
                 </StackPanel>

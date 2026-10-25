@@ -4,6 +4,7 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Threading;
 using muzzstream.ViewModels;
+using muzzstream.Models;
 using muzzstream.Services;
 using System;
 using System.Linq;
@@ -44,6 +45,14 @@ public partial class MainWindow : Window {
 
                 try {
                     await ApiService.LoadAllSystemLookupsAsync();
+                    var savedUser = SessionManager.LoadSession();
+                    if (savedUser != null && !string.IsNullOrEmpty(savedUser.token)) {
+                        AppSession.CurrentUser = savedUser;
+                        
+                        ApiService.SetAuthHeader(savedUser.token);
+                        
+                        System.Diagnostics.Debug.WriteLine($"[AUTOLOGIN] Успешный вход под именем: {savedUser.username}");
+                    }
                     await vm.InitializeCatalogAsync();
                     ModerationButton.IsVisible = vm.CurrentUser?.role_id > 0;
                 }
