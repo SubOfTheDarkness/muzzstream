@@ -16,8 +16,13 @@ public partial class CatalogView : UserControl {
     private async void RefreshCatalogBtn_Click(object? sender, RoutedEventArgs e) {
         try {
             if (DataContext is MainViewModel mainVm) {
-                await mainVm.InitializeCatalogAsync();
-                System.Diagnostics.Debug.WriteLine("Каталог успешно обновлен.");
+                if (mainVm.CurrentViewTitle != "Популярное (Топ 100)") {
+                    mainVm.ResetToMainCatalog();
+                }
+                else {
+                    await mainVm.InitializeCatalogAsync();
+                    System.Diagnostics.Debug.WriteLine("Каталог успешно обновлен.");
+                }
             }
         }
         catch (System.Exception ex)
@@ -55,10 +60,17 @@ public partial class CatalogView : UserControl {
             _lastActiveButton = clickedButton;
             _lastActiveTrack = clickedTrack;
 
+            if (DataContext is MainViewModel vm) {
+                vm.UpdateNearTracks(clickedTrack.track_id);
+            }
+
             if (MainWindow.Instance != null) {
+                string albumInfo = !string.IsNullOrEmpty(clickedTrack.album_name) ? $" — {clickedTrack.album_name}" : "";
+                string combinedMeta = $"{clickedTrack.authors_list}{albumInfo}";
+
                 MainWindow.Instance.UpdateBottomPlayer(
                     clickedTrack.composition_name, 
-                    clickedTrack.authors_list, 
+                    combinedMeta,
                     clickedTrack.duration, 
                     clickedTrack.formatted_duration
                 );
@@ -72,4 +84,23 @@ public partial class CatalogView : UserControl {
         }
     }
 
+    private void ArtistButton_Click(object? sender, RoutedEventArgs e) {
+        if (sender is Button btn && btn.CommandParameter is string artistName) {
+            if (DataContext is MainViewModel vm) {
+                vm.SetQueueToArtist(artistName);
+                vm.IsSearchResultsVisible = false;
+                vm.IsTopTracksVisible = true; 
+            }
+        }
+    }
+
+    private void AlbumButton_Click(object? sender, RoutedEventArgs e) {
+        if (sender is Button btn && btn.CommandParameter is string albumName) {
+            if (DataContext is MainViewModel vm) {
+                vm.SetQueueToAlbum(albumName);
+                vm.IsSearchResultsVisible = false;
+                vm.IsTopTracksVisible = true;
+            }
+        }
+    }
 }

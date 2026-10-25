@@ -23,6 +23,62 @@ public class MainViewModel : INotifyPropertyChanged {
     public ObservableCollection<string> FoundArtists { get; set; } = new();
     public ObservableCollection<string> FoundAlbums { get; set; } = new();
 
+    private int? _nextTrackId = null;
+    private int? _prevTrackId = null;
+    private string _currentViewTitle = "Популярное (Топ 100)";
+
+    public string CurrentViewTitle {
+        get => _currentViewTitle;
+        set { _currentViewTitle = value; OnPropertyChanged(); }
+    }
+
+    public int? NextTrackId {
+        get => _nextTrackId;
+        set { _nextTrackId = value; OnPropertyChanged(); }
+    }
+
+    public int? PrevTrackId {
+        get => _prevTrackId;
+        set { _prevTrackId = value; OnPropertyChanged(); }
+    }
+
+    public void UpdateNearTracks(int currentTrackId) {
+        if (DisplayedTracks.Count == 0) return;
+
+        var currentTrack = DisplayedTracks.FirstOrDefault(t => t.track_id == currentTrackId);
+        if (currentTrack == null) return;
+
+        int currentIndex = DisplayedTracks.IndexOf(currentTrack);
+
+        PrevTrackId = currentIndex > 0 ? DisplayedTracks[currentIndex - 1].track_id : null;
+
+        NextTrackId = currentIndex < DisplayedTracks.Count - 1 ? DisplayedTracks[currentIndex + 1].track_id : null;
+
+        System.Diagnostics.Debug.WriteLine($"[QUEUE_LAZY] Текущий: {currentTrackId}, Назад: {PrevTrackId}, Вперед: {NextTrackId}");
+    }
+
+    public void SetQueueToArtist(string artistName) {
+        CurrentViewTitle = $"Треки исполнителя: {artistName}";
+        var filtered = _allServerTracks.Where(t => t.authors_list.Contains(artistName, StringComparison.OrdinalIgnoreCase)).ToList();
+        
+        DisplayedTracks.Clear();
+        foreach (var track in filtered) DisplayedTracks.Add(track);
+    }
+
+    public void SetQueueToAlbum(string albumName) {
+        CurrentViewTitle = $"Альбом: {albumName}";
+        var filtered = _allServerTracks.Where(t => t.album_name.Equals(albumName, StringComparison.OrdinalIgnoreCase)).ToList();
+        
+        DisplayedTracks.Clear();
+        foreach (var track in filtered) DisplayedTracks.Add(track);
+    }
+
+    public void ResetToMainCatalog() {
+        CurrentViewTitle = "Популярное (Топ 100)";
+        DisplayedTracks.Clear();
+        foreach (var track in _allServerTracks) DisplayedTracks.Add(track);
+    }
+
     public double SidebarWidth {
         get => _sidebarWidth;
         set { _sidebarWidth = value; OnPropertyChanged(); }

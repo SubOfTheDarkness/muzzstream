@@ -6,6 +6,7 @@ using Avalonia.Threading;
 using muzzstream.ViewModels;
 using muzzstream.Services;
 using System;
+using System.Linq;
 
 namespace muzzstream.Views;
 
@@ -123,7 +124,7 @@ public partial class MainWindow : Window {
     public void UpdateBottomPlayer(string trackName, string trackMeta, int durationSeconds, string formattedDuration) {
         BottomTrackNameText.Text = trackName;
         BottomTrackMetaText.Text = trackMeta;
-        
+
         _currentTrackDurationSec = durationSeconds;
 
         TotalTimeText.Text = formattedDuration;
@@ -144,6 +145,44 @@ public partial class MainWindow : Window {
         
         if (_catalogView != null) {
             _catalogView.SyncActiveGridButtonIcon(playing);
+        }
+    }
+
+    private async void NextTrackButton_Click(object? sender, RoutedEventArgs e) {
+        if (DataContext is MainViewModel vm && vm.NextTrackId.HasValue) {
+            int nextId = vm.NextTrackId.Value;
+            
+            var nextTrack = vm.DisplayedTracks.FirstOrDefault(t => t.track_id == nextId);
+            if (nextTrack == null) return;
+
+            // 2. Включаем трек
+            await AudioPlayerService.PlayTrack(nextId);
+
+            string albumInfo = !string.IsNullOrEmpty(nextTrack.album_name) ? $" — {nextTrack.album_name}" : "";
+            string combinedMeta = $"{nextTrack.authors_list}{albumInfo}";
+            UpdateBottomPlayer(nextTrack.composition_name, combinedMeta, nextTrack.duration, nextTrack.formatted_duration);
+            
+            if (_catalogView != null) _catalogView.SyncActiveGridButtonIcon(true);
+
+            vm.UpdateNearTracks(nextId);
+        }
+    }
+
+    private async void PrevTrackButton_Click(object? sender, RoutedEventArgs e) {
+        if (DataContext is MainViewModel vm && vm.PrevTrackId.HasValue) {
+            int prevId = vm.PrevTrackId.Value;
+            
+            var prevTrack = vm.DisplayedTracks.FirstOrDefault(t => t.track_id == prevId);
+            if (prevTrack == null) return;
+
+            await AudioPlayerService.PlayTrack(prevId);
+
+            string albumInfo = !string.IsNullOrEmpty(prevTrack.album_name) ? $" — {prevTrack.album_name}" : "";
+            string combinedMeta = $"{prevTrack.authors_list}{albumInfo}";
+            UpdateBottomPlayer(prevTrack.composition_name, combinedMeta, prevTrack.duration, prevTrack.formatted_duration);            
+            
+            if (_catalogView != null) _catalogView.SyncActiveGridButtonIcon(true);
+            vm.UpdateNearTracks(prevId);
         }
     }
 
