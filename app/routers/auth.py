@@ -15,12 +15,14 @@ from app.models.user import User
 from app.models.confirmation import EmailConfirmation
 from app.models.session import Session
 from app.security.crypto import hash_password, verify_password
+from app.security.auth_deps import get_current_user
 from app.schemas.auth import (
     UserRegisterRequestSchema, 
     UserLoginRequestSchema, 
     TokenResponseSchema,
     EmailConfirmRequestSchema,
-    PasswordResetRequestSchema
+    PasswordResetRequestSchema,
+    PasswordChangeRequestSchema
 )
 
 router = APIRouter()
@@ -273,7 +275,7 @@ async def reset_password(payload: PasswordResetRequestSchema, db: AsyncSession =
     user = result.scalars().first()
 
     if not user:
-        raise HTTPException(status_code=404, detail="Пользователь с таким никнеймом не найден в системе.")
+        raise HTTPException(status_code=404, detail="Пользователь с таким никнеймом/email не найден в системе.")
 
     chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ23456789"
     temp_password = "".join(secrets.choice(chars) for _ in range(8)) + "!"
@@ -284,7 +286,35 @@ async def reset_password(payload: PasswordResetRequestSchema, db: AsyncSession =
 
         await send_password_reset_email(user.email, temp_password)
 
-        return {"status": "success", "message": "Новый пароль успешно отправлен на вашу почту."}
+        return {"status": "success", "message": f"Новый пароль успешно отправлен на почту: {user.email}"}
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=500, detail=f"Ошибка при сбросе пароля: {str(e)}")
+
+@router.patch("/password/change", status_code=status.HTTP_200_OK)
+async def change_password(
+    payload: PasswordChangeRequestSchema,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Смена пароля пользователем"""
+    if len(payload.new_password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Новый пароль слишком короткий. Минимальная длина — 8 символов."
+        )
+
+    if not verify_password(payload.old_password, current_user.password):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="INVALID_OLD_PASSWORD"
+        )
+
+    try:
+        current_user.password = hash_password(payload.new_password)
+        await db.commit()
+        
+        return {"status": "success", "message": "Пароль успешно изменен."}
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Ошибка транзакции: {str(e)}")

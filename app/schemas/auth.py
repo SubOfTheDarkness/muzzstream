@@ -17,13 +17,18 @@ class UserRegisterRequestSchema(BaseModel):
 
 class UserLoginRequestSchema(BaseModel):
     """Схема для валидации входных данных при авторизации пользователя"""
-    identity: EmailStr = Field(..., description="Электронная почта")
+    identity: str = Field(..., description="Электронная почта")
     password: str = Field(..., description="Пароль")
     device_name: str = Field(..., description="Название устройства")    # Это указывает не юзер, а клиентское приложение,а потом сервер должен будет зауникалить и ввести в бд
 
 class PasswordResetRequestSchema(BaseModel):
     """Схема для валидации входных данных при сбросе пароля пользователя"""
     identity: str
+
+class PasswordChangeRequestSchema(BaseModel):
+    """Схема для валидации входных данных при смене пароля пользователя"""
+    old_password: str
+    new_password: str
 
 class EmailConfirmRequestSchema(BaseModel):
     """Схема запроса для подтверждения почты шестизначным кодом"""
