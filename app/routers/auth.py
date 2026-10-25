@@ -25,30 +25,98 @@ from app.schemas.auth import (
 router = APIRouter()
 
 
+async def send_verification_email(email: str, code: str, is_new_register: bool = True):
+    """
+    Универсальная изолированная функция для асинхронной отправки писем.
+    Защищает основной поток эндпоинтов от блокировок во время ожидания ответа SMTP.
+    """
+    title = "Добро пожаловать в MuzzStream!" if is_new_register else "Запрос подтверждения MuzzStream"
+    subtitle = (
+        "Для подтверждения вашего адреса электронной почты введите следующий код в приложении:"
+        if is_new_register else 
+        "Вы пытаетесь войти в аккаунт с неподтвержденной почтой. Ваш новый код активации:"
+    )
+    
+    html_content = f"""
+    <html>
+        <body style="font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; padding: 20px;">
+            <div style="max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
+                <h2 style="color: #1DB954;">{title}</h2>
+                <p>{subtitle}</p>
+                <div style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #333; margin: 20px 0; padding: 10px; background: #eee; border-radius: 5px;">
+                    {code}
+                </div>
+                <p style="font-size: 12px; color: #777;">Код действителен в течение 10 минут. Если вы не запрашивали этот код, просто проигнорируйте письмо.</p>
+            </div>
+        </body>
+    </html>
+    """
+    
+    try:
+        message = MessageSchema(
+            subject="Подтверждение аккаунта MuzzStream",
+            recipients=[email],
+            body=html_content,
+            subtype=MessageType.html
+        )
+        fm = FastMail(settings.mail_config)
+        await fm.send_message(message)
+    except Exception as mail_ex:
+        print(f"[SMTP_DELAY_WARN] Проблема с отправкой почты на {email}: {str(mail_ex)}")
+
+
 @router.post("/register", status_code=status.HTTP_201_CREATED)
 async def register_user(payload: UserRegisterRequestSchema, db: AsyncSession = Depends(get_db)) -> dict:
     """Регистрация нового пользователя и отправка кода на почту"""
-    try:
-        if (await db.execute(select(User).where(User.email == payload.email))).scalar_one_or_none():
-            raise HTTPException(status_code=400, detail="Пользователь с такой почтой уже зарегистрирован")
-        if (await db.execute(select(User).where(User.nickname == payload.nickname))).scalar_one_or_none():
-            raise HTTPException(status_code=400, detail="Этот уникальный никнейм уже занят")
-
-        hashed_pass = hash_password(payload.password)
-        new_user = User(
-            nickname=payload.nickname,
-            username=payload.username,
-            email=payload.email,
-            password=hashed_pass,
-            role_id=4
+    if len(payload.nickname.strip()) < 4:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Никнейм слишком короткий. Минимальная длина — 4 символа."
         )
-        db.add(new_user)
-        await db.flush()
+        
+    if len(payload.password) < 8:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST, 
+            detail="Пароль слишком короткий. Минимальная длина — 8 символов."
+        )
+    try:
+        stmt_user = select(User).where(User.email == payload.email)
+        result_user = await db.execute(stmt_user)
+        user = result_user.scalars().first()
+
+        if user:
+            if user.is_verified:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, 
+                    detail="Пользователь с такой почтой уже зарегистрирован"
+                )
+            
+        else:
+            stmt_nick = select(User).where(User.nickname == payload.nickname)
+            result_nick = await db.execute(stmt_nick)
+            if result_nick.scalars().first():
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST, 
+                    detail="Этот уникальный никнейм уже занят"
+                )
+
+            hashed_pass = hash_password(payload.password)
+            user = User(
+                nickname=payload.nickname,
+                username=payload.username,
+                email=payload.email,
+                password=hashed_pass,
+                role_id=3
+            )
+            db.add(user)
+            await db.flush()
 
         verification_code = "".join(secrets.choice("0123456789") for _ in range(6))
         expiration_time = datetime.now(timezone.utc) + timedelta(minutes=10)
 
         await db.execute(delete(EmailConfirmation).where(EmailConfirmation.email == payload.email))
+
+        await db.commit()
 
         db_code = EmailConfirmation(
             email=payload.email,
@@ -57,31 +125,7 @@ async def register_user(payload: UserRegisterRequestSchema, db: AsyncSession = D
         )
         db.add(db_code)
         
-        html_content = f"""
-        <html>
-            <body style="font-family: Arial, sans-serif; text-align: center; background-color: #f4f4f4; padding: 20px;">
-                <div style="max-width: 500px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1);">
-                    <h2 style="color: #1DB954;">Добро пожаловать в MuzzStream!</h2>
-                    <p>Для подтверждения вашего адреса электронной почты введите следующий код в приложении:</p>
-                    <div style="font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #333; margin: 20px 0; padding: 10px; background: #eee; border-radius: 5px;">
-                        {verification_code}
-                    </div>
-                    <p style="font-size: 12px; color: #777;">Код действителен в течение 10 минут. Если вы не регистрировались в нашем сервисе, просто проигнорируйте это письмо.</p>
-                </div>
-            </body>
-        </html>
-        """
-        
-        message = MessageSchema(
-            subject="Подтверждение аккаунта MuzzStream",
-            recipients=[payload.email],
-            body=html_content,
-            subtype=MessageType.html
-        )
-        
-        fm = FastMail(settings.mail_config)
-        await fm.send_message(message)
-        
+        await send_verification_email(payload.email, verification_code, is_new_register=True)
         await db.commit()
 
         return {
@@ -89,6 +133,8 @@ async def register_user(payload: UserRegisterRequestSchema, db: AsyncSession = D
             "message": "Пользователь создан. Код подтверждения успешно отправлен на указанную почту."
         }
 
+    except HTTPException:
+        raise
     except Exception as e:
         await db.rollback()
         raise HTTPException(
@@ -152,12 +198,26 @@ async def login_user(payload: UserLoginRequestSchema, request: Request, db: Asyn
         raise HTTPException(status_code=401, detail="Неверная электронная почта или пароль")
 
     if not user.is_verified:
-        await db.execute(
-            text("INSERT INTO audit_log (user_id, operation, operation_status) VALUES (:uid, 'LOGIN_BLOCKED_UNCONFIRMED_EMAIL', 2)"),
-            {"uid": user.user_id}
-        )
+        verification_code = "".join(secrets.choice("0123456789") for _ in range(6))
+        expiration_time = datetime.now(timezone.utc) + timedelta(minutes=10)
+
+        await db.execute(delete(EmailConfirmation).where(EmailConfirmation.email == user.email))
         await db.commit()
-        raise HTTPException(status_code=403, detail="Вход запрещен - не подтвержден адрес электронной почты.")
+        
+        db_code = EmailConfirmation(
+            email=user.email,
+            code=verification_code,
+            expires_at=expiration_time
+        )
+        db.add(db_code)
+        
+        await send_verification_email(user.email, verification_code, is_new_register=False)
+        await db.commit()
+
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN, 
+            detail="UNVERIFIED_EMAIL"
+        )
 
     try:
         session_token = secrets.token_hex(32)
@@ -175,7 +235,14 @@ async def login_user(payload: UserLoginRequestSchema, request: Request, db: Asyn
         )
         await db.commit()
 
-        return {"token": session_token, "nickname": user.nickname, "role_id": user.role_id}
+        return {
+            "token": session_token, 
+            "user_id": user.user_id,
+            "nickname": user.nickname, 
+            "username": user.username,
+            "email": user.email,
+            "role_id": user.role_id
+        }
 
     except Exception as e:
         await db.rollback()

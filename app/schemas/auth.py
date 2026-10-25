@@ -30,6 +30,9 @@ class EmailConfirmRequestSchema(BaseModel):
 class TokenResponseSchema(BaseResponseSchema):
     """Схема ответа сервера при успешном входе. Возвращает токен для авторизации запросов."""
     token: str
+    user_id: int
     nickname: str
+    username: str
+    email: str
     role_id: int
 
