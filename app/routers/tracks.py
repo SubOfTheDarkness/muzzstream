@@ -109,67 +109,25 @@ async def get_album_with_tracks(album_id: int, db: AsyncSession = Depends(get_db
             detail=f"Ошибка ORM при получении данных альбома: {str(e)}"
         )
 
-def get_fixed_audio_chunk_generator(file_path: str, start: int, length: int):
-    """
-    Генератор, который считывает из файла заданное количество байт
-    """
-    with open(file_path, "rb") as audio:
-        audio.seek(start)
-        data = audio.read(length)
-        if data:
-            yield data
-
 @router.get("/{track_id}/stream")
-async def stream_track(
-    track_id: int, 
-    range: Optional[str] = Header(None), 
-    db: AsyncSession = Depends(get_db)
-) -> StreamingResponse:
-    """
-    Эндпоинт, который возвращает HTTP 206 для стриминга файла
-    """
+async def stream_track(track_id: int, db: AsyncSession = Depends(get_db)):
     track = await db.get(Track, track_id)
     if not track:
         raise HTTPException(status_code=404, detail="Запись о треке не найдена")
-
+        
     file_path = track.absolute_filepath
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Аудиофайл отсутствует на сервере")
 
-    file_size = os.path.getsize(file_path)
-
-    start = 0
-    if range and range.startswith("bytes="):
-        try:
-            range_str = range.replace("bytes=", "").strip()
-            range_parts = range_str.split("-")
-            if range_parts[0]:
-                start = int(range_parts[0])
-        except ValueError:
-            pass
-
-    if start >= file_size:
-        raise HTTPException(
-            status_code=status.HTTP_416_REQUESTED_RANGE_NOT_SATISFIABLE,
-            detail="Запрошенный диапазон байт выходит за пределы файла"
-        )
-
-    end = min(start + CHUNK_SIZE_BYTES - 1, file_size - 1)
-    actual_chunk_length = (end - start) + 1
-
-    headers = {
-        "Accept-Ranges": "bytes",
-        "Content-Type": "audio/mpeg",
-        "Content-Disposition": "inline",
-        "Content-Length": str(actual_chunk_length),
-        "Content-Range": f"bytes {start}-{end}/{file_size}"
-    }
-
-    return StreamingResponse(
-        get_fixed_audio_chunk_generator(file_path, start, actual_chunk_length),
-        status_code=206,
-        headers=headers
+    response = FileResponse(
+        path=file_path, 
+        media_type="audio/mpeg"
     )
+    
+    response.headers["Content-Disposition"] = "inline"
+    response.headers["Accept-Ranges"] = "bytes"
+    
+    return response
 
 @router.post("/listen", status_code=status.HTTP_201_CREATED)
 async def log_track_listening(
