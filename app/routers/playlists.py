@@ -89,6 +89,7 @@ async def get_my_playlists(
             .where(Playlist.user_id == current_user.user_id)
             .options(
                 selectinload(Playlist.tracks).options(
+                    joinedload(Track.album),
                     joinedload(Track.composition).options(
                         selectinload(Composition.authors),
                         selectinload(Composition.genres)
@@ -121,6 +122,7 @@ async def get_playlist_by_id(
             .where(Playlist.playlist_id == playlist_id)
             .options(
                 selectinload(Playlist.tracks).options(
+                    joinedload(Track.album),
                     joinedload(Track.composition).options(
                         selectinload(Composition.authors),
                         selectinload(Composition.genres)
