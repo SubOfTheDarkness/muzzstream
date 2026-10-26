@@ -98,6 +98,11 @@ async def get_my_playlists(
         )
         result = await db.execute(stmt)
         playlists_data = result.scalars().unique().all()
+        
+        for playlist in playlists_data:
+            playlist.tracks_count = len(playlist.tracks)
+            playlist.total_duration = sum(track.duration for track in playlist.tracks)
+            
         return playlists_data
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Ошибка получения плейлистов: {str(e)}")
@@ -131,6 +136,9 @@ async def get_playlist_by_id(
 
         if not playlist.is_public and playlist.user_id != current_user.user_id:
             raise HTTPException(status_code=403, detail="Доступ к приватному плейлисту запрещен")
+        
+        playlist.tracks_count = len(playlist.tracks)
+        playlist.total_duration = sum(track.duration for track in playlist.tracks)
 
         return playlist
     except HTTPException:
