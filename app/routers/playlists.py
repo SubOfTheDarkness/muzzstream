@@ -170,3 +170,42 @@ async def delete_playlist(
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=500, detail=f"Ошибка удаления: {str(e)}")
+
+@router.delete("/remove-track", status_code=status.HTTP_200_OK)
+async def remove_track_from_playlist(
+    payload: AddTrackToPlaylistRequestSchema,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Удаление трека из плейлиста пользователя"""
+    try:
+        playlist = await db.get(Playlist, payload.playlist_id)
+        if not playlist:
+            raise HTTPException(status_code=404, detail="Плейлист не найден")
+
+        if playlist.user_id != current_user.user_id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN, 
+                detail="Вы не можете редактировать чужие плейлисты"
+            )
+
+        delete_stmt = text(
+            "DELETE FROM tracks_of_playlist WHERE track_id = :tid AND playlist_id = :pid"
+        )
+        result = await db.execute(delete_stmt, {"tid": payload.track_id, "pid": payload.playlist_id})
+        
+        if result.rowcount == 0:
+            raise HTTPException(status_code=404, detail="Этот трек не найден в указанном плейлисте")
+
+        update_time_stmt = text(
+            "UPDATE playlists SET updated_at = NOW() WHERE playlist_id = :pid"
+        )
+        await db.execute(update_time_stmt, {"pid": payload.playlist_id})
+
+        await db.commit()
+        return {"status": "success", "message": "Трек успешно удален из плейлиста"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"Ошибка удаления трека: {str(e)}")
