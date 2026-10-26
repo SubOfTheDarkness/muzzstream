@@ -34,7 +34,6 @@ public partial class MainWindow : Window {
 
         this.Opened += async (s, e) => {
             if (DataContext is MainViewModel vm) {
-                _catalogView.DataContext = vm;
                 vm.CurrentPage = _catalogView;
 
                 bool isServerAlive = await ApiService.PingServerAsync();
@@ -50,10 +49,7 @@ public partial class MainWindow : Window {
                         AppSession.CurrentUser = savedUser;
                         
                         ApiService.SetAuthHeader(savedUser.token);
-                        
-                        System.Diagnostics.Debug.WriteLine($"[AUTOLOGIN] Успешный вход под именем: {savedUser.username}");
                     }
-                    await vm.InitializeCatalogAsync();
                     ModerationButton.IsVisible = vm.CurrentUser?.role_id > 0;
                 }
                 catch (Exception ex) {
@@ -145,54 +141,17 @@ public partial class MainWindow : Window {
             _trackProgressTimer.Start();
         }
     }
-
     private void PlayPauseButton_Click(object? sender, RoutedEventArgs e) {
         AudioPlayerService.TogglePlayPause();
-        bool playing = AudioPlayerService.IsPlaying;
-        
-        PlayPauseButton.Content = playing ? "||" : ">";
-        
-        if (_catalogView != null) {
-            _catalogView.SyncActiveGridButtonIcon(playing);
-        }
+        PlayPauseButton.Content = AudioPlayerService.IsPlaying ? "||" : ">";
     }
 
     private async void NextTrackButton_Click(object? sender, RoutedEventArgs e) {
-        if (DataContext is MainViewModel vm && vm.NextTrackId.HasValue) {
-            int nextId = vm.NextTrackId.Value;
-            
-            var nextTrack = vm.DisplayedTracks.FirstOrDefault(t => t.track_id == nextId);
-            if (nextTrack == null) return;
-
-            // 2. Включаем трек
-            await AudioPlayerService.PlayTrack(nextId);
-
-            string albumInfo = !string.IsNullOrEmpty(nextTrack.album_name) ? $" — {nextTrack.album_name}" : "";
-            string combinedMeta = $"{nextTrack.authors_list}{albumInfo}";
-            UpdateBottomPlayer(nextTrack.composition_name, combinedMeta, nextTrack.duration, nextTrack.formatted_duration);
-            
-            if (_catalogView != null) _catalogView.SyncActiveGridButtonIcon(true);
-
-            vm.UpdateNearTracks(nextId);
-        }
+        await AudioPlayerService.PlayNext();
     }
 
     private async void PrevTrackButton_Click(object? sender, RoutedEventArgs e) {
-        if (DataContext is MainViewModel vm && vm.PrevTrackId.HasValue) {
-            int prevId = vm.PrevTrackId.Value;
-            
-            var prevTrack = vm.DisplayedTracks.FirstOrDefault(t => t.track_id == prevId);
-            if (prevTrack == null) return;
-
-            await AudioPlayerService.PlayTrack(prevId);
-
-            string albumInfo = !string.IsNullOrEmpty(prevTrack.album_name) ? $" — {prevTrack.album_name}" : "";
-            string combinedMeta = $"{prevTrack.authors_list}{albumInfo}";
-            UpdateBottomPlayer(prevTrack.composition_name, combinedMeta, prevTrack.duration, prevTrack.formatted_duration);            
-            
-            if (_catalogView != null) _catalogView.SyncActiveGridButtonIcon(true);
-            vm.UpdateNearTracks(prevId);
-        }
+        await AudioPlayerService.PlayPrev();
     }
 
     private void VolumeSlider_PropertyChanged(object? sender, Avalonia.AvaloniaPropertyChangedEventArgs e) {

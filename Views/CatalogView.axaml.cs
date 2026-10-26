@@ -1,3 +1,4 @@
+using System.Linq;
 using Avalonia.Controls;
 using Avalonia.Interactivity;
 using muzzstream.Models;
@@ -7,100 +8,54 @@ using muzzstream.ViewModels;
 namespace muzzstream.Views;
 
 public partial class CatalogView : UserControl {
-    private TrackModel? _lastActiveTrack = null;
-    private Button? _lastActiveButton = null;
+    private readonly CatalogViewModel _viewModel = new();
 
     public CatalogView() {
         InitializeComponent();
-    }
-    private async void RefreshCatalogBtn_Click(object? sender, RoutedEventArgs e) {
-        try {
-            if (DataContext is MainViewModel mainVm) {
-                if (mainVm.CurrentViewTitle != "Популярное (Топ 100)") {
-                    mainVm.ResetToMainCatalog();
-                }
-                else {
-                    await mainVm.InitializeCatalogAsync();
-                    System.Diagnostics.Debug.WriteLine("Каталог успешно обновлен.");
-                }
+        DataContext = _viewModel;
+        
+        this.AttachedToVisualTree += async (s, e) => {
+            if (_viewModel.DisplayedTracks.Count == 0) {
+                await _viewModel.InitializeCatalogAsync();
             }
-        }
-        catch (System.Exception ex)
-        {
-            System.Diagnostics.Debug.WriteLine($"Ошибка запроса к серверу: {ex.Message}");
-        }
+        };
+    }
+
+    private async void RefreshCatalogBtn_Click(object? sender, RoutedEventArgs e) {
+        if (_viewModel.CurrentViewTitle != "Популярное (Топ 100)") _viewModel.ResetToMainCatalog();
+        else await _viewModel.InitializeCatalogAsync();
     }
 
     private async void TrackPlayButton_Click(object? sender, RoutedEventArgs e) {
-        if (sender is Button clickedButton && clickedButton.Content is TextBlock currentIconText) {
-            var clickedTrack = clickedButton.CommandParameter as TrackModel;
-            if (clickedTrack == null) return;
-            System.Diagnostics.Debug.WriteLine($"Проигрывается(id): {clickedTrack.track_id}");
-
-            if (_lastActiveTrack != null && _lastActiveTrack.track_id == clickedTrack.track_id) {
-                AudioPlayerService.TogglePlayPause();
-                bool playing = AudioPlayerService.IsPlaying;
-                
-                currentIconText.Text = playing ? "||" : ">";
-
-                if (MainWindow.Instance != null) {
-                    MainWindow.Instance.PlayPauseButton.Content = playing ? "||" : ">";
-                }
-                return;
-            }
-
-            if (_lastActiveButton != null && _lastActiveButton.Content is TextBlock oldIconText) {
-                oldIconText.Text = ">";
-            }
-
-            await AudioPlayerService.PlayTrack(clickedTrack.track_id);
+        if (sender is Button clickedButton && clickedButton.CommandParameter is TrackModel clickedTrack) {
             
-            currentIconText.Text = "||";
-
-            _lastActiveButton = clickedButton;
-            _lastActiveTrack = clickedTrack;
-
-            if (DataContext is MainViewModel vm) {
-                vm.UpdateNearTracks(clickedTrack.track_id);
+            if (AudioPlayerService.CurrentTrackId == clickedTrack.track_id) {
+                AudioPlayerService.TogglePlayPause();
+                
+                if (MainWindow.Instance != null) {
+                    MainWindow.Instance.PlayPauseButton.Content = AudioPlayerService.IsPlaying ? "||" : ">";
+                }
             }
-
-            if (MainWindow.Instance != null) {
-                string albumInfo = !string.IsNullOrEmpty(clickedTrack.album_name) ? $" — {clickedTrack.album_name}" : "";
-                string combinedMeta = $"{clickedTrack.authors_list}{albumInfo}";
-
-                MainWindow.Instance.UpdateBottomPlayer(
-                    clickedTrack.composition_name, 
-                    combinedMeta,
-                    clickedTrack.duration, 
-                    clickedTrack.formatted_duration
-                );
+            else {
+                var currentSourceQueue = _viewModel.DisplayedTracks.ToList();
+                await AudioPlayerService.PlayTrack(clickedTrack.track_id, currentSourceQueue);
             }
-        }
-    }
-
-    public void SyncActiveGridButtonIcon(bool isPlaying) {
-        if (_lastActiveButton != null && _lastActiveButton.Content is TextBlock iconText) {
-            iconText.Text = isPlaying ? "||" : ">";
         }
     }
 
     private void ArtistButton_Click(object? sender, RoutedEventArgs e) {
         if (sender is Button btn && btn.CommandParameter is string artistName) {
-            if (DataContext is MainViewModel vm) {
-                vm.SetQueueToArtist(artistName);
-                vm.IsSearchResultsVisible = false;
-                vm.IsTopTracksVisible = true; 
-            }
+            _viewModel.SetQueueToArtist(artistName);
+            _viewModel.IsSearchResultsVisible = false;
+            _viewModel.IsTopTracksVisible = true; 
         }
     }
 
     private void AlbumButton_Click(object? sender, RoutedEventArgs e) {
         if (sender is Button btn && btn.CommandParameter is string albumName) {
-            if (DataContext is MainViewModel vm) {
-                vm.SetQueueToAlbum(albumName);
-                vm.IsSearchResultsVisible = false;
-                vm.IsTopTracksVisible = true;
-            }
+            _viewModel.SetQueueToAlbum(albumName);
+            _viewModel.IsSearchResultsVisible = false;
+            _viewModel.IsTopTracksVisible = true;
         }
     }
 }

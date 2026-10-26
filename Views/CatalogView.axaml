@@ -4,7 +4,7 @@
              xmlns:vm="using:muzzstream.ViewModels"
              xmlns:controls="using:muzzstream.Controls"
              x:Class="muzzstream.Views.CatalogView"
-             x:DataType="vm:MainViewModel"
+             x:DataType="vm:CatalogViewModel"
              Background="#121212">
     
     <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
@@ -88,7 +88,7 @@
                                     <Button Grid.Column="0" Width="32" Height="32" CornerRadius="16" Background="#282828"
                                             HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
                                             Click="TrackPlayButton_Click" CommandParameter="{Binding}">
-                                        <TextBlock Text=">" Foreground="#1DB954" FontWeight="Bold" FontSize="12"/>
+                                        <TextBlock Text="{Binding ui_play_icon}" Foreground="#1DB954" FontWeight="Bold" FontSize="12"/>
                                     </Button>
                                     
                                     <Border Grid.Column="1" MaxWidth="300" HorizontalAlignment="Left" ClipToBounds="True">
