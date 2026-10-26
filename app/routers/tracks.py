@@ -110,7 +110,11 @@ async def get_album_with_tracks(album_id: int, db: AsyncSession = Depends(get_db
         )
 
 @router.get("/{track_id}/stream")
-async def stream_track(track_id: int, db: AsyncSession = Depends(get_db)):
+async def stream_track(
+    track_id: int, 
+    range: Optional[str] = Header(None),
+    db: AsyncSession = Depends(get_db)
+):
     track = await db.get(Track, track_id)
     if not track:
         raise HTTPException(status_code=404, detail="Запись о треке не найдена")
@@ -119,14 +123,50 @@ async def stream_track(track_id: int, db: AsyncSession = Depends(get_db)):
     if not os.path.exists(file_path):
         raise HTTPException(status_code=404, detail="Аудиофайл отсутствует на сервере")
 
-    response = FileResponse(
-        path=file_path, 
+    file_size = os.path.getsize(file_path)
+    
+    if not range:
+        response = FileResponse(path=file_path, media_type="audio/mpeg")
+        response.headers["Content-Disposition"] = "inline"
+        response.headers["Accept-Ranges"] = "bytes"
+        return response
+
+    try:
+        range_value = range.strip().split("=")[1]
+        start_str, end_str = range_value.split("-")
+        start = int(start_str)
+        end = int(end_str) if end_str else file_size - 1
+    except Exception:
+        raise HTTPException(status_code=400, detail="Некорректный формат заголовка Range")
+
+    if start >= file_size:
+        raise HTTPException(status_code=416, detail="Запрошенный диапазон за пределами файла")
+
+    chunk_length = end - start + 1
+
+    def file_iterator(path: str, offset: int, bytes_to_read: int):
+        with open(path, "rb") as f:
+            f.seek(offset)
+            remaining = bytes_to_read
+            while remaining > 0:
+                to_read = min(CHUNK_SIZE_BYTES, remaining)
+                data = f.read(to_read)
+                if not data:
+                    break
+                remaining -= len(data)
+                yield data
+
+    response = StreamingResponse(
+        file_iterator(file_path, start, chunk_length),
+        status_code=206,
         media_type="audio/mpeg"
     )
-    
-    response.headers["Content-Disposition"] = "inline"
+
+    response.headers["Content-Range"] = f"bytes {start}-{end}/{file_size}"
     response.headers["Accept-Ranges"] = "bytes"
-    
+    response.headers["Content-Length"] = str(chunk_length)
+    response.headers["Content-Disposition"] = "inline"
+
     return response
 
 @router.post("/listen", status_code=status.HTTP_201_CREATED)
