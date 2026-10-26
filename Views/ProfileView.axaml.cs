@@ -231,6 +231,7 @@ public partial class ProfileView : UserControl {
 
         if (MainWindow.Instance != null && MainWindow.Instance.DataContext is MainViewModel mainVm) {
             mainVm.RefreshSidebarAuth();
+            MainWindow.Instance.ClearPlaylists();
             if (MainWindow.Instance.ModerationButton != null) {
                 MainWindow.Instance.ModerationButton.IsVisible = false;
             }

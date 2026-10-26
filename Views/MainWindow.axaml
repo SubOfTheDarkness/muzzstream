@@ -56,17 +56,10 @@
                             </Grid>
                         </Button>
 
-                        <Button Background="Transparent" HorizontalAlignment="Stretch" Padding="5,8">
+                        <Button x:Name="PlaylistsButton" Click="NavigationButton_Click" Background="Transparent" HorizontalAlignment="Stretch" Padding="5,8">
                             <Grid ColumnDefinitions="30, *">
                                 <TextBlock Grid.Column="0" Text="📼" FontSize="16" HorizontalAlignment="Center"/>
                                 <TextBlock Grid.Column="1" Text="Плейлисты" VerticalAlignment="Center" Margin="10,0,0,0"/>
-                            </Grid>
-                        </Button>
-
-                        <Button Background="Transparent" HorizontalAlignment="Stretch" Padding="5,8">
-                            <Grid ColumnDefinitions="30, *">
-                                <TextBlock Grid.Column="0" Text="💿" FontSize="16" HorizontalAlignment="Center"/>
-                                <TextBlock Grid.Column="1" Text="Моя музыка" VerticalAlignment="Center" Margin="10,0,0,0"/>
                             </Grid>
                         </Button>
 
@@ -147,6 +140,16 @@
                 
             </Grid>
         </Border>
-        
+        <Grid x:Name="OverlayContainer" IsVisible="False" Background="#AA000000" ZIndex="100">
+            <Border Background="#1E1E1E" 
+                    VerticalAlignment="Center" 
+                    HorizontalAlignment="Center" 
+                    CornerRadius="12" 
+                    BorderBrush="#333333" 
+                    BorderThickness="1"
+                    BoxShadow="0 4 20 0 #80000000">
+                <ContentControl x:Name="OverlayContent"/>
+            </Border>
+        </Grid>
     </Grid>
 </Window>

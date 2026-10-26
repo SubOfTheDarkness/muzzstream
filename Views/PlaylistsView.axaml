@@ -1,0 +1,141 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:models="using:muzzstream.Models"
+             xmlns:controls="using:muzzstream.Controls"
+             xmlns:vm="using:muzzstream.ViewModels"
+             x:Class="muzzstream.Views.PlaylistsView"
+             x:DataType="vm:PlaylistsViewModel"
+             Background="#121212">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="25" Spacing="25">
+            
+            <Grid ColumnDefinitions="Auto, *, Auto">
+                <Button Grid.Column="0" 
+                        Content="←" 
+                        Click="BackButton_Click" 
+                        IsVisible="{Binding IsPlaylistSelected}"
+                        Background="#282828" 
+                        Foreground="White" 
+                        Padding="12,6" 
+                        CornerRadius="6"/>
+                
+                <TextBlock Grid.Column="1" 
+                           Text="{Binding PlaylistTitle}" 
+                           FontSize="24" 
+                           FontWeight="Bold" 
+                           Foreground="#FFFFFF" 
+                           Margin="10,0,0,0" 
+                           VerticalAlignment="Center"/>
+            </Grid>
+
+            <StackPanel IsVisible="{Binding !IsPlaylistSelected}" Spacing="20">
+                <ItemsControl ItemsSource="{Binding UserPlaylists}" IsVisible="{Binding !!UserPlaylists.Count}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate>
+                            <WrapPanel Orientation="Horizontal"/>
+                        </ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:PlaylistModel">
+                            <Button Background="Transparent" Padding="0" Click="PlaylistCard_Click" CommandParameter="{Binding}" Margin="0,0,20,20">
+                                <Border Background="#181818" Padding="20" CornerRadius="10" BorderBrush="#282828" BorderThickness="1" Width="160" Height="170">
+                                    <StackPanel VerticalAlignment="Center" Spacing="8">
+                                        <TextBlock Text="📼" FontSize="44" HorizontalAlignment="Center"/>
+                                        <TextBlock Text="{Binding playlist_name}" Foreground="White" FontWeight="Bold" FontSize="14" TextAlignment="Center" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Text="{Binding tracks_count, StringFormat='Треков: {0}'}" Foreground="#AAAAAA" FontSize="12" TextAlignment="Center"/>
+                                    </StackPanel>
+                                </Border>
+                            </Button>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+                <StackPanel IsVisible="{Binding !UserPlaylists.Count}" 
+                            Spacing="15" 
+                            HorizontalAlignment="Center" 
+                            Margin="0,50,0,0">
+                    <TextBlock Text="📭" FontSize="50" HorizontalAlignment="Center"/>
+                    <TextBlock Text="У вас пока нет ни одного плейлиста" 
+                               FontSize="18" 
+                               FontWeight="SemiBold" 
+                               Foreground="White" 
+                               HorizontalAlignment="Center"/>
+                    <TextBlock Text="Вы можете создать плейлист при добавлении любого трека из каталога." 
+                               FontSize="13" 
+                               Foreground="#A7A7A7" 
+                               TextAlignment="Center"
+                               MaxWidth="300"
+                               HorizontalAlignment="Center"/>
+                    
+                    <Button Content="Перейти в Каталог" 
+                            Click="NavigateToCatalogBtn_Click"
+                            Background="#1DB954" 
+                            Foreground="White" 
+                            FontWeight="SemiBold"
+                            Padding="20,10" 
+                            CornerRadius="20"
+                            HorizontalAlignment="Center"
+                            Margin="0,10,0,0"/>
+                </StackPanel>
+            </StackPanel>
+
+            <StackPanel IsVisible="{Binding IsPlaylistSelected}" Spacing="20">
+                <Grid ColumnDefinitions="Auto, *, Auto">
+                    <Button Grid.Column="2" Content="🗑️ Удалить плейлист" Click="DeletePlaylist_Click" Background="#33FF3333" BorderBrush="#FF3333" BorderThickness="1" Foreground="#FF6666" Padding="12,6" CornerRadius="6"/>
+                </Grid>
+
+                <ItemsControl ItemsSource="{Binding PlaylistTracks}">
+                    <ItemsControl.ItemsPanel>
+                        <ItemsPanelTemplate><StackPanel Spacing="6"/></ItemsPanelTemplate>
+                    </ItemsControl.ItemsPanel>
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate x:DataType="models:TrackModel">
+                            <Border Background="#181818" CornerRadius="6" Padding="12,8" BorderBrush="#242424" BorderThickness="1">
+                                <Grid ColumnDefinitions="45, *, *, 80, 40">
+                                    
+                                    <Button Grid.Column="0" Width="32" Height="32" CornerRadius="16" Background="#282828"
+                                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center"
+                                            Click="TrackPlayButton_Click" CommandParameter="{Binding}">
+                                        <TextBlock Text="{Binding ui_play_icon}" Foreground="#1DB954" FontWeight="Bold" FontSize="12"/>
+                                    </Button>
+                                    
+                                    <Border Grid.Column="1" MaxWidth="300" HorizontalAlignment="Left" ClipToBounds="True">
+                                        <StackPanel VerticalAlignment="Center" Margin="10,0,0,0">
+                                            <controls:MarqueeTextBlock Text="{Binding composition_name}" 
+                                                                    FontWeight="SemiBold" 
+                                                                    Foreground="White"
+                                                                    FontSize="14"/>
+                                            <Button Background="Transparent" Padding="0" Click="NavigateToArtistFromPlaylist" CommandParameter="{Binding authors_list}" HorizontalAlignment="Left">
+                                                <controls:MarqueeTextBlock Text="{Binding authors_list}" FontSize="12" Foreground="#1DB954"/>
+                                            </Button>
+                                        </StackPanel>
+                                    </Border>
+                                    
+                                    <Button Grid.Column="2" Background="Transparent" Padding="0" Click="NavigateToAlbumFromPlaylist" CommandParameter="{Binding album_name}" HorizontalAlignment="Left" VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding album_name}" Foreground="#AAAAAA" TextTrimming="CharacterEllipsis"/>
+                                    </Button>
+
+                                    <TextBlock Grid.Column="3" Text="{Binding formatted_duration}" Foreground="#AAAAAA" VerticalAlignment="Center" HorizontalAlignment="Right"/>
+
+                                    <Button Grid.Column="4" Width="28" Height="28" CornerRadius="4" Background="Transparent"
+                                            Click="RemoveTrack_Click" CommandParameter="{Binding}"
+                                            HorizontalContentAlignment="Center" VerticalContentAlignment="Center">
+                                        <TextBlock Text="❌" Foreground="#FF5555" FontSize="12"/>
+                                    </Button>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+                
+                <TextBlock Text="В этом плейлисте пока нет треков. Добавьте их из каталога!" 
+                           Foreground="#A7A7A7" 
+                           FontSize="14" 
+                           HorizontalAlignment="Center" 
+                           Margin="0,30,0,0"
+                           IsVisible="{Binding !PlaylistTracks.Count}"/>
+            </StackPanel>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

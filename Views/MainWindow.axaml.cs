@@ -14,8 +14,9 @@ namespace muzzstream.Views;
 public partial class MainWindow : Window {
     public static MainWindow? Instance { get; private set; }
 
-    private readonly CatalogView _catalogView = new();
+    internal readonly CatalogView _catalogView = new();
     private readonly ProfileView _profileView = new();
+    private readonly PlaylistsView _playlistsView = new();
     private DispatcherTimer? _trackProgressTimer;
     private int _currentTrackDurationSec = 0;
 
@@ -168,10 +169,45 @@ public partial class MainWindow : Window {
         if (DataContext is MainViewModel vm) { vm.SidebarWidth = 60; }
     }
 
-    private void NavigationButton_Click(object? sender, RoutedEventArgs e) {
-        if (DataContext is MainViewModel vm && sender is Button button) {
-            if (button.Name == "CatalogButton") vm.CurrentPage = _catalogView;
-            else if (button.Name == "ProfileButton") vm.CurrentPage = _profileView;
+    public void NavigateToPage(string targetPage) {
+        if (DataContext is MainViewModel vm) {
+            switch (targetPage) {
+                case "CatalogButton":
+                    vm.CurrentPage = _catalogView;
+                    break;
+                case "ProfileButton":
+                    vm.CurrentPage = _profileView;
+                    break;
+                case "PlaylistsButton":
+                    vm.CurrentPage = _playlistsView;
+                    break;
+                default:
+                    System.Diagnostics.Debug.WriteLine($"Неизвестная страница для навигации: {targetPage}");
+                    break;
+            }
         }
+    }
+
+    public void NavigationButton_Click(object? sender, RoutedEventArgs e) {
+        if (sender is Button button && !string.IsNullOrEmpty(button.Name)) {
+            NavigateToPage(button.Name);
+        }
+    }
+    public void ShowOverlayDialog(Control dialogContent) {
+        Dispatcher.UIThread.Post(() => {
+            OverlayContent.Content = dialogContent;
+            OverlayContainer.IsVisible = true;
+        });
+    }
+
+    public void HideOverlayDialog() {
+        Dispatcher.UIThread.Post(() => {
+            OverlayContainer.IsVisible = false;
+            OverlayContent.Content = null;
+        });
+    }
+
+    public void ClearPlaylists() {
+        _playlistsView.ClearPlaylistsData();
     }
 }
