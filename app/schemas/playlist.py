@@ -5,7 +5,7 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from app.schemas.base import BaseResponseSchema
-from app.schemas.catalog import TrackShortResponseSchema
+from app.schemas.catalog import TrackResponseSchema
 
 
 class PlaylistCreateRequestSchema(BaseModel):
@@ -27,4 +27,4 @@ class PlaylistResponseSchema(BaseResponseSchema):
     is_public: bool
     tracks_count: int
     total_duration: int
-    tracks: List[TrackShortResponseSchema]
+    tracks: List[TrackResponseSchema]
