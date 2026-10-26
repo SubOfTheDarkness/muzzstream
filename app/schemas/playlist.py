@@ -25,5 +25,6 @@ class PlaylistResponseSchema(BaseResponseSchema):
     user_id: int
     playlist_name: str
     is_public: bool
+    tracks_count: int
+    total_duration: int
     tracks: List[TrackShortResponseSchema]
-

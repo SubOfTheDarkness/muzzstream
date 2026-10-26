@@ -20,6 +20,6 @@ class Session(Base):
         nullable=False
     )
     device_name: Mapped[str] = mapped_column(TEXT, nullable=False)
-    ip_address: Mapped[str] = mapped_column(VARCHAR(15), nullable=False)
+    ip_address: Mapped[str] = mapped_column(VARCHAR(45), nullable=False)
 
     user: Mapped["User"] = relationship("User")

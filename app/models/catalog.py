@@ -52,7 +52,7 @@ class Album(Base):
 
     album_id: Mapped[int] = mapped_column(INT, primary_key=True, autoincrement=True)
     album_name: Mapped[str] = mapped_column(TEXT, nullable=False)
-    release_year: Mapped[int] = mapped_column(INT, nullable=False)
+    release_year: Mapped[int] = mapped_column(SMALLINT, nullable=False)
 
     authors: Mapped[List[Author]] = relationship("Author", secondary=authors_of_album)
     genres: Mapped[List[Genre]] = relationship("Genre", secondary=genres_of_album)

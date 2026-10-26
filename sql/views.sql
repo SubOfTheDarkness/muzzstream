@@ -29,9 +29,13 @@ CREATE OR REPLACE VIEW view_popular_tracks AS
 SELECT vtd.*, COUNT(lh.history_id) AS total_plays
 FROM view_track_details vtd
 JOIN listening_history lh ON vtd.track_id = lh.track_id
-GROUP BY vtd.track_id, vtd.track_name, vtd.release_year, vtd.duration, vtd.album_name, vtd.authors_list
+GROUP BY 
+    vtd.track_id, vtd.duration, vtd.version_type, vtd.filepath,
+    vtd.composition_id, vtd.composition_name, vtd.composition_release_year,
+    vtd.album_id, vtd.album_name, vtd.album_release_year, vtd.authors_list
 ORDER BY total_plays DESC
 LIMIT 100;
+
 
 -- Публичные плейлисты пользователей с количеством треков в них
 CREATE OR REPLACE VIEW view_public_playlists AS

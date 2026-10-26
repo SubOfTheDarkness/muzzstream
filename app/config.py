@@ -24,7 +24,7 @@ class Settings(BaseSettings):
     @property
     def database_url(self) -> str:
         """Формирует строку подключения к БД для psycopg"""
-        return f"postgresql+psycopg://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
+        return f"postgresql+psycopg_async://{self.DB_USER}:{self.DB_PASS}@{self.DB_HOST}:{self.DB_PORT}/{self.DB_NAME}"
     
     @property
     def base_dir(self) -> str:

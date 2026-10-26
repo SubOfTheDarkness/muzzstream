@@ -43,7 +43,7 @@ CREATE TABLE sessions (
 	token TEXT primary key,
 	user_id INT not null,
 	device_name TEXT not null,
-	ip_address VARCHAR(15) not null,
+	ip_address VARCHAR(45) not null,
 	foreign key (user_id) references users(user_id) ON DELETE CASCADE
 );
 
