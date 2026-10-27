@@ -211,3 +211,35 @@ async def remove_track_from_playlist(
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=500, detail=f"Ошибка удаления трека: {str(e)}")
+
+@router.get("/search/public", response_model=List[PlaylistResponseSchema])
+async def search_public_playlists(
+    query: str,
+    db: AsyncSession = Depends(get_db),
+):
+    """Поиск по всем публичным плейлистам"""
+    try:
+        stmt = (
+            select(Playlist)
+            .where(Playlist.is_public == True)
+            .where(Playlist.playlist_name.ilike(f"%{query}%"))
+            .options(
+                selectinload(Playlist.tracks).options(
+                    joinedload(Track.album),
+                    joinedload(Track.composition).options(
+                        selectinload(Composition.authors),
+                        selectinload(Composition.genres)
+                    )
+                )
+            )
+        )
+        result = await db.execute(stmt)
+        playlists_data = result.scalars().unique().all()
+        
+        for playlist in playlists_data:
+            playlist.tracks_count = len(playlist.tracks)
+            playlist.total_duration = sum(t.duration for t in playlist.tracks)
+            
+        return playlists_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
