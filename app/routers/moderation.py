@@ -38,12 +38,11 @@ async def admin_delete_user(
     user = await db.get(User, user_id)
     if not user:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
-        
     if user.user_id == admin.user_id:
         raise HTTPException(status_code=400, detail="Вы не можете удалить самого себя")
 
     try:
-        await db.delete(user)
+        await db.execute(text("CALL admin_delete_user_cascade(:uid)"), {"uid": user_id})
         await db.commit()
         return {"status": "success", "message": f"Пользователь ID {user_id} полностью удален."}
     except Exception as e:
@@ -85,13 +84,14 @@ async def admin_change_user_role(
     user = await db.get(User, payload.user_id)
     if not user:
         raise HTTPException(status_code=404, detail="Пользователь не найден")
-
     if user.user_id == admin.user_id:
         raise HTTPException(status_code=400, detail="Вы не можете изменить роль у самого себя")
 
     try:
-        user.role_id = payload.new_role_id
-        await db.execute(delete(UserSession).where(UserSession.user_id == payload.user_id))
+        await db.execute(
+            text("CALL change_user_role(:uid, :rid)"), 
+            {"uid": payload.user_id, "rid": payload.new_role_id}
+        )
         await db.commit()
         return {"status": "success", "message": "Роль успешно изменена. Сессии сброшены."}
     except Exception as e:
@@ -152,7 +152,10 @@ async def moderate_playlist_visibility(
             return {"status": "info", "message": "Плейлист и так является приватным."}
 
     try:
-        playlist.is_public = is_public
+        await db.execute(
+            text("CALL moderate_playlist_visibility(:pid, :pub)"), 
+            {"pid": playlist_id, "pub": is_public}
+        )
         await db.commit()
         return {"status": "success", "message": f"Видимость плейлиста изменена на {'публичный' if is_public else 'приватный'}"}
     except Exception as e:

@@ -17,42 +17,31 @@ BEGIN
 END;
 $$;
 
--- Безопасная смена роли пользователя с записью в аудит
-CREATE OR REPLACE PROCEDURE change_user_role(p_user_id INT, p_new_role_id INT, p_admin_id INT)
+-- Безопасная смена роли пользователя
+CREATE OR REPLACE PROCEDURE change_user_role(p_user_id INT, p_new_role_id INT)
 LANGUAGE plpgsql AS $$
 BEGIN
     UPDATE users SET role_id = p_new_role_id WHERE user_id = p_user_id;
-    INSERT INTO audit_log (user_id, operation, operation_status) 
-    VALUES (p_admin_id, 'CHANGE_ROLE_OF_USER_' || p_user_id, 1);
+    DELETE FROM sessions WHERE user_id = p_user_id;
 END;
 $$;
 
--- Функция расчета общего времени звучания плейлиста
-CREATE OR REPLACE FUNCTION get_playlist_duration(p_playlist_id INT)
-RETURNS INT LANGUAGE plpgsql AS $$
-DECLARE
-    v_total_duration INT;
+-- Каскадный снос пользователя
+CREATE OR REPLACE PROCEDURE admin_delete_user_cascade(p_user_id INT)
+LANGUAGE plpgsql AS $$
 BEGIN
-    SELECT COALESCE(SUM(duration), 0) INTO v_total_duration
-    FROM tracks t
-    JOIN tracks_of_playlist top ON t.track_id = top.track_id
-    WHERE top.playlist_id = p_playlist_id;
-    RETURN v_total_duration;
+    DELETE FROM sessions WHERE user_id = p_user_id;
+    DELETE FROM users WHERE user_id = p_user_id;
 END;
 $$;
 
--- Функция проверки: является ли пользователь автором конкретного трека
-CREATE OR REPLACE FUNCTION is_track_author(p_user_id INT, p_track_id INT)
-RETURNS BOOLEAN LANGUAGE plpgsql AS $$
-DECLARE
-    v_is_author BOOLEAN;
+-- Скрытие плейлиста
+CREATE OR REPLACE PROCEDURE moderate_playlist_visibility(p_playlist_id INT, p_is_public BOOLEAN)
+LANGUAGE plpgsql AS $$
 BEGIN
-    SELECT EXISTS (
-        SELECT 1 FROM authors_of_track aot
-        JOIN authors a ON aot.author_id = a.author_id
-        JOIN users u ON u.user_id = p_user_id
-        WHERE aot.track_id = p_track_id AND a.author_name = u.username
-    ) INTO v_is_author;
-    RETURN v_is_author;
+    UPDATE playlists 
+    SET is_public = p_is_public, 
+        updated_at = NOW() 
+    WHERE playlist_id = p_playlist_id;
 END;
 $$;
