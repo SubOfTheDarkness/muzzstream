@@ -86,3 +86,21 @@ async def verify_artist_upload_rights(
         raise HTTPException(status_code=403, detail="Недостаточно прав. Требуется роль Owner или Manager.")
 
     return author
+
+async def require_admin(current_user: User = Depends(get_current_user)) -> User:
+    """Пропускает строго только Администраторов"""
+    if current_user.role_id != 1:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Доступ запрещен. Требуются права Администратора."
+        )
+    return current_user
+
+async def require_moderator(current_user: User = Depends(get_current_user)) -> User:
+    """Пропускает Модераторов и Администраторов"""
+    if current_user.role_id not in [1, 2]:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Доступ запрещен. Требуются права Модератора или Администратора."
+        )
+    return current_user

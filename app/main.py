@@ -11,7 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from fastapi import FastAPI, Depends, Request, status
 from fastapi.responses import JSONResponse
 from app.database import engine, async_session_local
-from app.routers import tracks, auth, playlists, references
+from app.routers import tracks, auth, playlists, references, moderation
 
 CHECK_AUTHOR_STATUS_INTERVAL_SEC = 60
 
@@ -57,10 +57,11 @@ app = FastAPI(
     lifespan=lifespan
 )
 
+app.include_router(references.router, prefix="/api/v1", tags=["References"])
 app.include_router(auth.router, prefix="/api/v1/auth", tags=["Auth"])
 app.include_router(tracks.router, prefix="/api/v1/tracks", tags=["Tracks"])
 app.include_router(playlists.router, prefix="/api/v1/playlists", tags=["Playlists"])
-app.include_router(references.router, prefix="/api/v1", tags=["References"])
+app.include_router(moderation.router, prefix="/api/v1/moderation", tags=["Moderation"])
 
 @app.middleware("http")
 async def check_db(request: Request, call_next):
