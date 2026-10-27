@@ -87,13 +87,19 @@ public static class ApiService {
         }
     }
 
-    public static async Task LogListeningAsync(int trackId, int duration){
+    public static async Task LogListeningAsync(int trackId, int duration) {
         try {
             if (AppSession.CurrentUser == null) return;
-            var payload = new { user_id = AppSession.CurrentUser.user_id, track_id = trackId, listened_duration = duration };
+
+            var payload = new { 
+                track_id = trackId, 
+                listened_duration = duration 
+            };
+            
             await _client.PostAsJsonAsync("tracks/listen", payload);
         }
-        catch {  }
+        catch {
+        }
     }
 
     public static void SetAuthHeader(string token) {
