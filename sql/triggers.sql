@@ -1,5 +1,4 @@
 -- ТРИГГЕРЫ
-
 CREATE OR REPLACE FUNCTION trigger_audit_moderation_actions()
 RETURNS TRIGGER LANGUAGE plpgsql AS $$
 DECLARE
@@ -65,3 +64,18 @@ DROP TRIGGER IF EXISTS trg_audit_user_role_shift ON users;
 CREATE TRIGGER trg_audit_user_role_shift
 AFTER UPDATE ON users
 FOR EACH ROW EXECUTE FUNCTION trigger_audit_moderation_actions();
+
+
+-- Попытка что-то сделать с аудитом
+CREATE OR REPLACE FUNCTION fn_protect_audit_logs()
+RETURNS TRIGGER LANGUAGE plpgsql AS $$
+BEGIN
+    RAISE EXCEPTION 'Изменение или удаление записей журнала аудита строго запрещено';
+    RETURN NULL;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS trg_protect_audit_logs ON audit_log;
+CREATE TRIGGER trg_protect_audit_logs
+BEFORE UPDATE OR DELETE ON audit_log
+FOR EACH ROW EXECUTE FUNCTION fn_protect_audit_logs();
