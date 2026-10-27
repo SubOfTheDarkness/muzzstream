@@ -6,53 +6,76 @@ using muzzstream.Models;
 namespace muzzstream.Services;
 
 public static class SessionManager {
-    private static readonly string SessionFolderPath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), 
-        "muzzstream"
+    private static readonly string SessionPath = Path.Combine(
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        "muzzstream", "session.json"
     );
-    
-    private static readonly string SessionFilePath = Path.Combine(SessionFolderPath, "session.json");
 
-    public static void SaveSession(UserModel user) {
+    private class SessionData {
+        public UserModel? User { get; set; }
+        public float Volume { get; set; } = 0.5f;
+    }
+
+    public static void SaveSession(UserModel? user, float volume) {
         try {
-            if (!Directory.Exists(SessionFolderPath)) {
-                Directory.CreateDirectory(SessionFolderPath);
-            }
+            var dir = Path.GetDirectoryName(SessionPath);
+            if (dir != null) Directory.CreateDirectory(dir);
 
-            var json = JsonSerializer.Serialize(user, new JsonSerializerOptions { WriteIndented = true });
-            File.WriteAllText(SessionFilePath, json);
-            System.Diagnostics.Debug.WriteLine("Сессия успешно сохранена на диск.");
+            var data = new SessionData { User = user, Volume = volume };
+            string json = JsonSerializer.Serialize(data);
+            File.WriteAllText(SessionPath, json);
         }
         catch (Exception ex) {
             System.Diagnostics.Debug.WriteLine($"{ex.Message}");
         }
     }
 
-    public static UserModel? LoadSession() {
+    public static void SaveSession(UserModel? user) {
         try {
-            if (!File.Exists(SessionFilePath)) return null;
+            float currentVolume = 0.5f;
+            if (File.Exists(SessionPath)) {
+                string json = File.ReadAllText(SessionPath);
+                var oldData = JsonSerializer.Deserialize<SessionData>(json);
+                if (oldData != null) currentVolume = oldData.Volume;
+            }
 
-            var json = File.ReadAllText(SessionFilePath);
-            var user = JsonSerializer.Deserialize<UserModel>(json);
-            
-            System.Diagnostics.Debug.WriteLine(user != null 
-                ? "Найдена сохраненная сессия на диске." 
-                : "Файл сессии пуст.");
-                
-            return user;
+            SaveSession(user, currentVolume);
         }
         catch (Exception ex) {
             System.Diagnostics.Debug.WriteLine($"{ex.Message}");
-            return null;
         }
+    }
+
+    public static UserModel? LoadSession(out float savedVolume) {
+        savedVolume = 0.5f;
+        try {
+            if (!File.Exists(SessionPath)) return null;
+
+            string json = File.ReadAllText(SessionPath);
+            var data = JsonSerializer.Deserialize<SessionData>(json);
+            
+            if (data != null) {
+                savedVolume = data.Volume;
+                return data.User;
+            }
+        }
+        catch (Exception ex) {
+            System.Diagnostics.Debug.WriteLine($"{ex.Message}");
+        }
+        return null;
     }
 
     public static void ClearSession() {
         try {
-            if (File.Exists(SessionFilePath)) {
-                File.Delete(SessionFilePath);
-                System.Diagnostics.Debug.WriteLine("Файл сессии удален с диска.");
+            float currentVolume = 0.5f;
+            
+            if (File.Exists(SessionPath)) {
+                string json = File.ReadAllText(SessionPath);
+                var oldData = JsonSerializer.Deserialize<SessionData>(json);
+                if (oldData != null) currentVolume = oldData.Volume;
             }
+
+            SaveSession(null, currentVolume);
         }
         catch (Exception ex) {
             System.Diagnostics.Debug.WriteLine($"{ex.Message}");

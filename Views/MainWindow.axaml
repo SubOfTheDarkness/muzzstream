@@ -63,12 +63,12 @@
                             </Grid>
                         </Button>
 
-                        <Button Background="Transparent" HorizontalAlignment="Stretch" Padding="5,8">
+                        <!-- <Button Background="Transparent" HorizontalAlignment="Stretch" Padding="5,8">
                             <Grid ColumnDefinitions="30, *">
                                 <TextBlock Grid.Column="0" Text="🎸" FontSize="16" HorizontalAlignment="Center"/>
                                 <TextBlock Grid.Column="1" Text="Группы" VerticalAlignment="Center" Margin="10,0,0,0"/>
                             </Grid>
-                        </Button>
+                        </Button> -->
 
                         <Separator Background="#282828" Margin="0,5"/>
 

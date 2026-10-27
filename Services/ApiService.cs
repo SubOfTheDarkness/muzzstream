@@ -6,6 +6,7 @@ using System.Net.Http.Json;
 using System.Text.Json;
 using System.Threading.Tasks;
 using muzzstream.Models;
+using System.Net;
 
 namespace muzzstream.Services;
 
@@ -98,6 +99,10 @@ public static class ApiService {
     public static void SetAuthHeader(string token) {
         _client.DefaultRequestHeaders.Remove("Authorization");
         _client.DefaultRequestHeaders.Add("Authorization", token);
+    }
+
+    public static void ClearAuthHeader() {
+        _client.DefaultRequestHeaders.Remove("Authorization");
     }
 
     public static async Task<int> LoginAsync(string identity, string password) {
@@ -296,7 +301,8 @@ public static class ApiService {
                 playlist_name = root.GetProperty("playlist_name").GetString() ?? "Без названия",
                 is_public = root.GetProperty("is_public").GetBoolean(),
                 tracks_count = root.GetProperty("tracks_count").GetInt32(),
-                total_duration = root.GetProperty("total_duration").GetInt32()
+                total_duration = root.GetProperty("total_duration").GetInt32(),
+                is_own_playlist = true 
             };
 
             if (root.TryGetProperty("tracks", out var tracksArray) && tracksArray.ValueKind == JsonValueKind.Array) {
@@ -416,5 +422,29 @@ public static class ApiService {
         catch (Exception ex) {
             return ex.Message;
         }
+    }
+
+    public static async Task<List<PlaylistModel>> SearchPublicPlaylistsAsync(string query) {
+        try {
+            var response = await _client.GetAsync($"playlists/search/public?query={Uri.EscapeDataString(query)}");
+            if (!response.IsSuccessStatusCode) return new List<PlaylistModel>();
+
+            var json = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+            var playlists = new List<PlaylistModel>();
+
+            foreach (var pElement in doc.RootElement.EnumerateArray()) {
+                var playlist = new PlaylistModel {
+                    playlist_id = pElement.GetProperty("playlist_id").GetInt32(),
+                    playlist_name = pElement.GetProperty("playlist_name").GetString() ?? "Без названия",
+                    tracks_count = pElement.GetProperty("tracks_count").GetInt32(),
+                    tracks = ParseJsonTracks(pElement.GetProperty("tracks")),
+                    is_own_playlist = false 
+                };
+                playlists.Add(playlist);
+            }
+            return playlists;
+        }
+        catch { return new List<PlaylistModel>(); }
     }
 }

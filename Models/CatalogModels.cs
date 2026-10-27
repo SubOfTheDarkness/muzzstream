@@ -25,6 +25,7 @@ public class TrackModel : INotifyPropertyChanged {
     public string composition_name { get; set; } = string.Empty;
     public string authors_list { get; set; } = string.Empty;
     public string album_name { get; set; } = string.Empty;
+    public bool has_album => !string.IsNullOrWhiteSpace(album_name);
 
     public string formatted_duration => $"{duration / 60}:{duration % 60:D2}";
 

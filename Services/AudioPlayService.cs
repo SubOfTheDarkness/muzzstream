@@ -12,7 +12,8 @@ public static class AudioPlayerService {
     private static int _audioStreamHandle;
     private static int _currentTrackId = -1;
     private static bool _isPlaying = false;
-    private static float _currentVolume = 0.7f;
+    private static float _currentVolume = 0.5f;
+    public static double VolumePercentage => _currentVolume * 100.0;
     private static List<TrackModel> _currentPlayQueue = new();
 
     public static int CurrentTrackId => _currentTrackId;
@@ -29,6 +30,9 @@ public static class AudioPlayerService {
                 Bass.Configure(Configuration.NetBufferLength, 15000); 
                 Bass.Configure(Configuration.NetPreBuffer, 5); 
                 Bass.Configure(Configuration.NetReadTimeOut, 3000);
+
+                SessionManager.LoadSession(out float savedVolume);
+                _currentVolume = Math.Clamp(savedVolume, 0f, 1f);
             }
         }
         catch (Exception ex) {
@@ -51,7 +55,7 @@ public static class AudioPlayerService {
             string streamUrlWithHeaders = $"{streamUrl}\r\nRange: bytes={startPositionBytes}-\r\n\r\n";
 
             _audioStreamHandle = await Task.Run(() => Bass.CreateStream(
-                streamUrlWithHeaders, 0, BassFlags.Default | BassFlags.StreamDownloadBlocks, null, IntPtr.Zero
+                streamUrlWithHeaders, 0, BassFlags.Default, null, IntPtr.Zero
             ));
 
             if (_audioStreamHandle != 0) {
@@ -115,8 +119,17 @@ public static class AudioPlayerService {
     public static void SetVolume(double volumeValue) {
         try {
             _currentVolume = (float)(volumeValue / 100.0);
-            if (_audioStreamHandle != 0) Bass.ChannelSetAttribute(_audioStreamHandle, ChannelAttribute.Volume, _currentVolume);
-        } catch { }
+            _currentVolume = Math.Clamp(_currentVolume, 0f, 1f);
+
+            if (_audioStreamHandle != 0 && CurrentTrackId != -1) {
+                Bass.ChannelSetAttribute(_audioStreamHandle, ChannelAttribute.Volume, _currentVolume);
+            }
+            
+            SessionManager.SaveSession(AppSession.CurrentUser, _currentVolume);
+        }
+        catch (Exception ex) {
+            System.Diagnostics.Debug.WriteLine($"{ex.Message}");
+        }
     }
 
     public static TimeSpan GetCurrentPosition() {

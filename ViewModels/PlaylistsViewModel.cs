@@ -13,9 +13,11 @@ namespace muzzstream.ViewModels;
 public class PlaylistsViewModel : INotifyPropertyChanged {
     private bool _isPlaylistSelected = false;
     private PlaylistModel? _selectedPlaylist;
-    private string _playlistTitle = "Мои Плейлисты";
+    private string _playlistTitle = "Плейлисты";
+    private string _searchQuery = string.Empty;
+    private List<PlaylistModel> _myLocalPlaylists = new();
 
-    public ObservableCollection<PlaylistModel> UserPlaylists { get; set; } = new();
+    public ObservableCollection<PlaylistModel> DisplayedPlaylists { get; set; } = new();
     public ObservableCollection<TrackModel> PlaylistTracks { get; set; } = new();
 
     public bool IsPlaylistSelected {
@@ -33,6 +35,17 @@ public class PlaylistsViewModel : INotifyPropertyChanged {
         set { _playlistTitle = value; OnPropertyChanged(); }
     }
 
+    public string SearchQuery {
+        get => _searchQuery;
+        set {
+            if (_searchQuery != value) {
+                _searchQuery = value;
+                OnPropertyChanged();
+                ExecutePlaylistsSearch(value);
+            }
+        }
+    }
+
     public PlaylistsViewModel() {
         AudioPlayerService.TrackStateChanged += OnTrackStateChanged;
     }
@@ -41,14 +54,41 @@ public class PlaylistsViewModel : INotifyPropertyChanged {
         if (AppSession.CurrentUser == null) return;
 
         try {
-            var playlists = await ApiService.GetMyPlaylistsAsync();
-            UserPlaylists.Clear();
-            foreach (var p in playlists) {
-                UserPlaylists.Add(p);
-            }
+            _myLocalPlaylists = await ApiService.GetMyPlaylistsAsync();
+            ExecutePlaylistsSearch(SearchQuery);
         }
         catch (Exception ex) {
-            System.Diagnostics.Debug.WriteLine($"Ошибка загрузки списка плейлистов: {ex.Message}");
+            System.Diagnostics.Debug.WriteLine($"{ex.Message}");
+        }
+    }
+
+    public async void ExecutePlaylistsSearch(string query) {
+        string cleanQuery = query.Trim().ToLower();
+
+        if (string.IsNullOrEmpty(cleanQuery)) {
+            DisplayedPlaylists.Clear();
+            foreach (var p in _myLocalPlaylists) {
+                DisplayedPlaylists.Add(p);
+            }
+            return;
+        }
+
+        var filteredMy = _myLocalPlaylists
+            .Where(p => p.playlist_name.ToLower().Contains(cleanQuery))
+            .ToList();
+
+        var publicPlaylists = await ApiService.SearchPublicPlaylistsAsync(cleanQuery);
+
+        DisplayedPlaylists.Clear();
+        
+        foreach (var p in filteredMy) {
+            DisplayedPlaylists.Add(p);
+        }
+
+        foreach (var p in publicPlaylists) {
+            if (DisplayedPlaylists.All(existing => existing.playlist_id != p.playlist_id)) {
+                DisplayedPlaylists.Add(p);
+            }
         }
     }
 
@@ -56,14 +96,13 @@ public class PlaylistsViewModel : INotifyPropertyChanged {
         SelectedPlaylist = playlist;
         PlaylistTitle = playlist.playlist_name;
         IsPlaylistSelected = true;
-
         UpdatePlaylistTracksUI(playlist.tracks);
     }
 
     public void ClosePlaylist() {
         IsPlaylistSelected = false;
         SelectedPlaylist = null;
-        PlaylistTitle = "Мои Плейлисты";
+        PlaylistTitle = "Плейлисты";
         PlaylistTracks.Clear();
     }
 
@@ -96,7 +135,7 @@ public class PlaylistsViewModel : INotifyPropertyChanged {
         try {
             string? error = await ApiService.DeletePlaylistAsync(SelectedPlaylist.playlist_id);
             if (error == null) {
-                ClosePlaylist(); 
+                ClosePlaylist();
                 await LoadPlaylistsAsync();
                 return true;
             }
@@ -127,7 +166,8 @@ public class PlaylistsViewModel : INotifyPropertyChanged {
 
                 SelectedPlaylist.tracks_count = SelectedPlaylist.tracks.Count;
 
-                OnPropertyChanged(nameof(UserPlaylists));
+                OnPropertyChanged(nameof(DisplayedPlaylists));
+                OnPropertyChanged(nameof(DisplayedPlaylists));
                 
                 return true;
             }
@@ -138,6 +178,14 @@ public class PlaylistsViewModel : INotifyPropertyChanged {
             System.Diagnostics.Debug.WriteLine($"{ex.Message}");
             return false;
         }
+    }
+
+    public void ClearAllData() {
+        ClosePlaylist();
+        SearchQuery = string.Empty;
+        _myLocalPlaylists.Clear();
+        DisplayedPlaylists.Clear();
+        PlaylistTracks.Clear();
     }
 
     public event PropertyChangedEventHandler? PropertyChanged;

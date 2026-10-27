@@ -45,11 +45,19 @@ public partial class MainWindow : Window {
 
                 try {
                     await ApiService.LoadAllSystemLookupsAsync();
-                    var savedUser = SessionManager.LoadSession();
+                    var savedUser = SessionManager.LoadSession(out float savedVolume);
                     if (savedUser != null && !string.IsNullOrEmpty(savedUser.token)) {
                         AppSession.CurrentUser = savedUser;
                         
                         ApiService.SetAuthHeader(savedUser.token);
+                        AudioPlayerService.SetVolume(savedVolume * 100.0); 
+
+                        Dispatcher.UIThread.Post(() => {
+                            var volumeSlider = this.FindControl<Slider>("VolumeSlider");
+                            if (volumeSlider != null) {
+                                volumeSlider.Value = AudioPlayerService.VolumePercentage;
+                            }
+                        });
                     }
                     ModerationButton.IsVisible = vm.CurrentUser?.role_id > 0;
                 }
@@ -86,7 +94,7 @@ public partial class MainWindow : Window {
         _trackProgressTimer.Tick += TrackProgressTimer_Tick;
     }
 
-    private void TrackProgressTimer_Tick(object? sender, EventArgs e) {
+    private async void TrackProgressTimer_Tick(object? sender, EventArgs e) {
         if (AudioPlayerService.IsPlaying && _currentTrackDurationSec > 0) {
             TimeSpan realPosition = AudioPlayerService.GetCurrentPosition();
             double totalSeconds = realPosition.TotalSeconds;
@@ -101,6 +109,16 @@ public partial class MainWindow : Window {
                 int secs = (int)totalSeconds % 60;
                 CurrentTimeText.Text = $"{mins}:{secs:D2}";
             });
+
+            if (totalSeconds >= _currentTrackDurationSec - 0.5) {
+                await AudioPlayerService.PlayNext();
+                
+                if (!AudioPlayerService.IsPlaying) {
+                    Dispatcher.UIThread.Post(() => {
+                        PlayPauseButton.Content = ">";
+                    });
+                }
+            }
         }
     }
 
@@ -156,7 +174,7 @@ public partial class MainWindow : Window {
     }
 
     private void VolumeSlider_PropertyChanged(object? sender, Avalonia.AvaloniaPropertyChangedEventArgs e) {
-        if (e.Property.Name == "Value" && VolumeSlider != null && AudioPlayerService.CurrentTrackId != -1) {
+        if (e.Property.Name == "Value" && VolumeSlider != null) {
             AudioPlayerService.SetVolume(VolumeSlider.Value);
         }
     }

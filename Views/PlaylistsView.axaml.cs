@@ -15,10 +15,8 @@ public partial class PlaylistsView : UserControl {
         DataContext = _viewModel;
 
         this.AttachedToVisualTree += async (s, e) => {
-            if (AppSession.CurrentUser != null) {
-                _viewModel.ClosePlaylist();
-                await _viewModel.LoadPlaylistsAsync();
-            }
+            _viewModel.ClosePlaylist();
+            await _viewModel.LoadPlaylistsAsync();
         };
     }
 
@@ -90,8 +88,6 @@ public partial class PlaylistsView : UserControl {
     }
 
     public void ClearPlaylistsData() {
-        _viewModel.ClosePlaylist();
-        _viewModel.UserPlaylists.Clear();
-        _viewModel.PlaylistTracks.Clear();
+        _viewModel.ClearAllData();
     }
 }

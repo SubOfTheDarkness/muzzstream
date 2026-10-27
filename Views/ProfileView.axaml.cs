@@ -36,11 +36,11 @@ public partial class ProfileView : UserControl {
         _viewModel.SetStatus("", "info");
         _viewModel.ClearPasswords();
         
-        if (LoginPasswordBox != null) LoginPasswordBox.Text = string.Empty;
-        if (RegPasswordBox != null) RegPasswordBox.Text = string.Empty;
-        if (VerificationCodeBox != null) VerificationCodeBox.Text = string.Empty;
-        if (LoginPasswordBox != null) LoginPasswordBox.Text = string.Empty;
-        if (RegPasswordBox != null) RegPasswordBox.Text = string.Empty;
+        // if (LoginPasswordBox != null) LoginPasswordBox.Text = string.Empty;
+        // if (RegPasswordBox != null) RegPasswordBox.Text = string.Empty;
+        // if (VerificationCodeBox != null) VerificationCodeBox.Text = string.Empty;
+        // if (LoginPasswordBox != null) LoginPasswordBox.Text = string.Empty;
+        // if (RegPasswordBox != null) RegPasswordBox.Text = string.Empty;
     }
 
     private void GuestButtons_Click(object? sender, RoutedEventArgs e) {
@@ -108,11 +108,13 @@ public partial class ProfileView : UserControl {
                     _viewModel.ProfileState = 4;
                     ClearStatusAndInputs();
                     ApplyStateVisibility(4);
+                    
                     _viewModel.RefreshUser();
                     RoleBadge.IsVisible = _viewModel.CurrentUser?.role_id > 0;
 
                     if (MainWindow.Instance != null && MainWindow.Instance.DataContext is MainViewModel mainVm) {
                         mainVm.RefreshSidebarAuth();
+                        MainWindow.Instance.ClearPlaylists();
                         if (MainWindow.Instance.ModerationButton != null) {
                             MainWindow.Instance.ModerationButton.IsVisible = mainVm.CurrentUser?.role_id > 0;
                         }
@@ -223,6 +225,7 @@ public partial class ProfileView : UserControl {
 
     private void LogoutBtn_Click(object? sender, RoutedEventArgs e) {
         AppSession.CurrentUser = null;
+        ApiService.ClearAuthHeader();
         SessionManager.ClearSession();
         _viewModel.ProfileState = 0;
         ClearStatusAndInputs();

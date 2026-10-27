@@ -9,7 +9,12 @@ public class PlaylistModel : INotifyPropertyChanged {
     public int user_id { get; set; }
     public string playlist_name { get; set; } = string.Empty;
     public bool is_public { get; set; }
-    
+    public bool is_own_playlist { get; set; } = true; 
+
+    public string ui_playlist_owner_text => is_own_playlist ? "Мой плейлист" : "Публичный плейлист";
+    public string ui_playlist_owner_color => is_own_playlist ? "#1DB954" : "#64748B";
+    public string ui_playlist_border_color => is_own_playlist ? "#282828" : "#1E293B";
+
     private int _tracksCount;
     public int tracks_count {
         get => _tracksCount;

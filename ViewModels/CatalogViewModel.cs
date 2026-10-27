@@ -99,7 +99,7 @@ public class CatalogViewModel : INotifyPropertyChanged {
         foreach (var artist in filtered.Select(t => t.authors_list).Distinct()) FoundArtists.Add(artist);
 
         FoundAlbums.Clear();
-        foreach (var album in filtered.Select(t => t.album_name).Distinct().Where(a => a != "?")) FoundAlbums.Add(album);
+        foreach (var album in filtered.Select(t => t.album_name).Distinct().Where(a => !string.IsNullOrWhiteSpace(a))) FoundAlbums.Add(album);
     }
 
     public void SetQueueToArtist(string artistName) {
