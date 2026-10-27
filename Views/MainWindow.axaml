@@ -91,6 +91,7 @@
                                 BorderThickness="1" 
                                 HorizontalAlignment="Stretch" 
                                 Padding="5,8"
+                                Click="NavigationButton_Click"
                                 x:Name="ModerationButton">
                             <Grid ColumnDefinitions="30, *">
                                 <TextBlock Grid.Column="0" Text="🛡️" FontSize="16" HorizontalAlignment="Center"/>

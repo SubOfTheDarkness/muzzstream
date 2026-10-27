@@ -1,0 +1,331 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:muzzstream.ViewModels"
+             xmlns:models="using:muzzstream.Models"
+             x:Class="muzzstream.Views.ModerationView"
+             x:DataType="vm:ModerationViewModel"
+             Background="#121212">
+
+    <Grid RowDefinitions="Auto, *">
+        <StackPanel Grid.Row="0" Margin="25,20,25,10" Spacing="10">
+            <TextBlock Text="Панель Модерации" FontSize="24" FontWeight="Bold" Foreground="#FFFFFF"/>
+            <TextBlock Text="{Binding StatusMessage}" x:Name="StatusLabel" FontSize="13" Foreground="#1DB954" IsVisible="{Binding !!StatusMessage}"/>
+        </StackPanel>
+
+        <TabControl Grid.Row="1" Margin="15,0,15,15">
+            
+            <TabItem Header="Пользователи">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <Grid RowDefinitions="Auto, *" Margin="0,10,0,0">
+                        <Expander Grid.Row="0" Header="Регистрация нового аккаунта" Background="#181818" Margin="0,0,0,10">
+                            <StackPanel Spacing="10" Width="400" HorizontalAlignment="Left" Margin="10">
+                                <TextBox Text="{Binding NewUserNickname}" PlaceholderText="Никнейм"/>
+                                <TextBox Text="{Binding NewUserUsername}" PlaceholderText="Отображаемое имя"/>
+                                <TextBox Text="{Binding NewUserEmail}" PlaceholderText="Email"/>
+                                <TextBox Text="{Binding NewUserPassword}" PasswordChar="*" PlaceholderText="Пароль"/>
+                                <CheckBox IsChecked="{Binding NewUserIsVerified}" Content="Активировать сразу"/>
+                                <Button Content="Создать аккаунт" Click="CreateUserClick" Background="#1DB954" Foreground="White"/>
+                            </StackPanel>
+                        </Expander>
+
+                        <Border Grid.Row="1" Background="#181818" CornerRadius="8" Padding="10">
+                            <StackPanel Spacing="5">
+                                <Grid ColumnDefinitions="60, 150, 150, *, 100" Margin="10,5">
+                                    <TextBlock Grid.Column="0" Text="ID" FontWeight="Bold" Foreground="#A7A7A7"/>
+                                    <TextBlock Grid.Column="1" Text="Никнейм" FontWeight="Bold" Foreground="#A7A7A7"/>
+                                    <TextBlock Grid.Column="2" Text="Имя" FontWeight="Bold" Foreground="#A7A7A7"/>
+                                    <TextBlock Grid.Column="3" Text="Email" FontWeight="Bold" Foreground="#A7A7A7"/>
+                                    <TextBlock Grid.Column="4" Text="Статус" FontWeight="Bold" Foreground="#A7A7A7"/>
+                                </Grid>
+                                <Separator Background="#282828"/>
+                                
+                                <ItemsControl ItemsSource="{Binding AllUsers}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="models:UserModel">
+                                            <Border Background="#222222" Margin="0,2" Padding="10,8" CornerRadius="4">
+                                                <Border.ContextFlyout>
+                                                    <MenuFlyout>
+                                                        <MenuItem Header="🛡 Назначить Админом" Click="SetRoleAdmin_Click" CommandParameter="{Binding}"/>
+                                                        <MenuItem Header="🛡 Назначить Модератором" Click="SetRoleModer_Click" CommandParameter="{Binding}"/>
+                                                        <MenuItem Header="👤 Назначить Пользователем" Click="SetRoleUser_Click" CommandParameter="{Binding}"/>
+                                                        <Separator/>
+                                                        <MenuItem Header="🔑 Сбросить пароль на 'Muzz123!'" Click="ResetPassword_Click" CommandParameter="{Binding}"/>
+                                                        <Separator/>
+                                                        <MenuItem Header="❌ Удалить пользователя полностью" Click="DeleteUser_Click" CommandParameter="{Binding}" Foreground="#FF3333"/>
+                                                    </MenuFlyout>
+                                                </Border.ContextFlyout>
+                                                <Grid ColumnDefinitions="60, 150, 150, *, 100" VerticalAlignment="Center">
+                                                    <TextBlock Grid.Column="0" Text="{Binding user_id}" Foreground="#1DB954"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding nickname}" FontWeight="SemiBold"/>
+                                                    <TextBlock Grid.Column="2" Text="{Binding username}"/>
+                                                    <TextBlock Grid.Column="3" Text="{Binding email}"/>
+                                                    <TextBlock Grid.Column="4" Text="Active" Foreground="#1DB954"/>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Плейлисты">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <Border Background="#181818" CornerRadius="8" Padding="10" Margin="0,10,0,0">
+                        <StackPanel Spacing="5">
+                            <Grid ColumnDefinitions="80, *" Margin="10,5">
+                                <TextBlock Grid.Column="0" Text="ID Пл." FontWeight="Bold" Foreground="#A7A7A7"/>
+                                <TextBlock Grid.Column="1" Text="Метаданные, автор и видимость" FontWeight="Bold" Foreground="#A7A7A7"/>
+                            </Grid>
+                            <Separator Background="#282828"/>
+
+                            <ItemsControl ItemsSource="{Binding AllPlaylists}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate x:DataType="models:PlaylistModel">
+                                        <Border Background="#222222" Margin="0,2" Padding="10,8" CornerRadius="4">
+                                            <Border.ContextFlyout>
+                                                <MenuFlyout>
+                                                    <MenuItem Header="🔒 Сделать приватным" Click="HidePlaylist_ContextClick" CommandParameter="{Binding}"/>
+                                                    <MenuItem Header="🌐 Опубликовать (Только Администратор)" Click="PublishPlaylist_ContextClick" CommandParameter="{Binding}"/>
+                                                </MenuFlyout>
+                                            </Border.ContextFlyout>
+                                            <Grid ColumnDefinitions="80, *" VerticalAlignment="Center">
+                                                <TextBlock Grid.Column="0" Text="{Binding playlist_id}" Foreground="#1DB954"/>
+                                                <StackPanel Grid.Column="1" Spacing="2">
+                                                    <TextBlock Text="{Binding playlist_name}" FontWeight="Bold" Foreground="White"/>
+                                                    <TextBlock Text="{Binding ui_playlist_owner_text}" Foreground="{Binding ui_playlist_owner_color}" FontSize="12"/>
+                                                </StackPanel>
+                                            </Grid>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                    </Border>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Треки">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <Grid RowDefinitions="Auto, *" Margin="0,10,0,0">
+                        <Expander Grid.Row="0" Header="Заливка трека" Background="#181818" Margin="0,0,0,10">
+                            <Grid ColumnDefinitions="*, *" Margin="10" Width="650" HorizontalAlignment="Left">
+                                <StackPanel Grid.Column="0" Spacing="8" Margin="0,0,10,0">
+                                    <TextBlock Text="Выбор исполнителя:" FontSize="11" Foreground="#A7A7A7"/>
+                                    <ComboBox ItemsSource="{Binding AllAuthors}" SelectedItem="{Binding SelectedUploadAuthor}" HorizontalAlignment="Stretch" Background="#242424">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate x:DataType="models:AuthorModel">
+                                                <TextBlock Text="{Binding author_name}"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                    
+                                    <TextBox Text="{Binding UploadCompName}" PlaceholderText="Название композиции"/>
+                                    <TextBox Text="{Binding UploadYear}" PlaceholderText="Год выпуска"/>
+                                    <TextBox Text="{Binding UploadDuration}" PlaceholderText="Длительность (в секундах)"/>
+                                </StackPanel>
+                                <StackPanel Grid.Column="1" Spacing="8" Margin="10,0,0,0">
+                                    <TextBlock Text="Выбор жанра:" FontSize="11" Foreground="#A7A7A7"/>
+                                    <ComboBox ItemsSource="{Binding AllGenres}" SelectedItem="{Binding SelectedUploadGenre}" HorizontalAlignment="Stretch" Background="#242424">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate x:DataType="models:GenreModel">
+                                                <TextBlock Text="{Binding genre_name}"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+
+                                    <TextBlock Text="Привязать к альбому (Опционально):" FontSize="11" Foreground="#A7A7A7"/>
+                                    <ComboBox ItemsSource="{Binding AllAlbums}" SelectedItem="{Binding SelectedUploadAlbum}" HorizontalAlignment="Stretch" Background="#242424">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate x:DataType="models:AlbumModel">
+                                                <TextBlock Text="{Binding album_name}"/>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                    </ComboBox>
+                                    
+                                    <TextBox Text="{Binding UploadVersion}" PlaceholderText="Версия (Studio, Live, Acoustic)"/>
+                                    <TextBox Text="{Binding UploadFilePath}" PlaceholderText="Абсолютный путь к файлу .mp3 на ПК"/>
+                                    <Button Content="Опубликовать трек" Click="SubmitUploadTrackClick" Background="#1DB954" Foreground="White" HorizontalAlignment="Right" Margin="0,5,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </Expander>
+
+                        <Border Grid.Row="1" Background="#181818" CornerRadius="8" Padding="10">
+                            <StackPanel Spacing="5">
+                                <Grid ColumnDefinitions="80, *, *, 120" Margin="10,5">
+                                    <TextBlock Grid.Column="0" Text="ID Трека" FontWeight="Bold" Foreground="#A7A7A7"/>
+                                    <TextBlock Grid.Column="1" Text="Название композиции" FontWeight="Bold" Foreground="#A7A7A7"/>
+                                    <TextBlock Grid.Column="2" Text="Исполнители / Альбом" FontWeight="Bold" Foreground="#A7A7A7"/>
+                                    <TextBlock Grid.Column="3" Text="Хронометраж" FontWeight="Bold" Foreground="#A7A7A7"/>
+                                </Grid>
+                                <Separator Background="#282828"/>
+                                
+                                <ItemsControl ItemsSource="{Binding AllTracks}">
+                                    <ItemsControl.ItemTemplate>
+                                        <DataTemplate x:DataType="models:TrackModel">
+                                            <Border Background="#222222" Margin="0,2" Padding="10,8" CornerRadius="4">
+                                                <Border.ContextFlyout>
+                                                    <MenuFlyout>
+                                                        <MenuItem Header="✏ Редактировать данные трека" Click="EditTrack_ContextClick" CommandParameter="{Binding}"/>
+                                                        <Separator/>
+                                                        <MenuItem Header="🗑 Удалить трек" Click="DeleteTrack_ContextClick" CommandParameter="{Binding}" Foreground="#FF3333"/>
+                                                    </MenuFlyout>
+                                                </Border.ContextFlyout>
+                                                <Grid ColumnDefinitions="80, *, *, 120" VerticalAlignment="Center">
+                                                    <TextBlock Grid.Column="0" Text="{Binding track_id}" Foreground="#1DB954"/>
+                                                    <TextBlock Grid.Column="1" Text="{Binding composition_name}" FontWeight="SemiBold"/>
+                                                    <StackPanel Grid.Column="2" Spacing="2">
+                                                        <TextBlock Text="{Binding authors_list}" FontSize="12" Foreground="#1DB954"/>
+                                                        <TextBlock Text="{Binding album_name, StringFormat='Альбом: {0}'}" FontSize="11" Foreground="#888888" IsVisible="{Binding has_album}"/>
+                                                    </StackPanel>
+                                                    <TextBlock Grid.Column="3" Text="{Binding formatted_duration}" Foreground="#AAAAAA"/>
+                                                </Grid>
+                                            </Border>
+                                        </DataTemplate>
+                                    </ItemsControl.ItemTemplate>
+                                </ItemsControl>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+
+            <TabItem Header="Справочники">
+                <ScrollViewer VerticalScrollBarVisibility="Auto">
+                    <Grid RowDefinitions="Auto, *" Margin="0,10,0,0">
+                        <Border Grid.Row="0" Background="#181818" Padding="15" CornerRadius="8" Margin="0,0,0,10">
+                            <Grid ColumnDefinitions="*, 1.2*, *">
+                                
+                                <StackPanel Grid.Column="0" Spacing="6" Margin="0,0,10,0">
+                                    <TextBlock Text="Добавить жанр" FontSize="12" Foreground="#1DB954" FontWeight="Bold"/>
+                                    <TextBox Text="{Binding NewGenreName}" PlaceholderText="Имя жанра (Rock, Pop...)"/>
+                                    <Button Content="Добавить жанр" Click="AddGenreClick" Background="#282828" Foreground="White" CornerRadius="4" Margin="0,5,0,0"/>
+                                </StackPanel>
+                                
+                                <StackPanel Grid.Column="1" Spacing="6" Margin="5,0,5,0">
+                                    <TextBlock Text="Создать альбом" FontSize="12" Foreground="#1DB954" FontWeight="Bold"/>
+                                    <TextBox Text="{Binding NewAlbumName}" PlaceholderText="Название нового альбома"/>
+                                    <TextBox Text="{Binding NewAlbumYear}" PlaceholderText="Год выпуска"/>
+                                    
+                                    <TextBlock Text="Выберите авторов альбома:" FontSize="11" Foreground="#A7A7A7"/>
+                                    <Border Background="#242424" CornerRadius="6" Padding="4" Height="100" BorderBrush="#333333" BorderThickness="1">
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                            <ItemsControl ItemsSource="{Binding AlbumAuthorsSelection}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:AuthorSelectItem">
+                                                        <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="5,2" Foreground="White">
+                                                            <TextBlock Text="{Binding Author.author_name}" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                                        </CheckBox>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </Border>
+
+                                    <TextBlock Text="Выберите жанры альбома:" FontSize="11" Foreground="#A7A7A7"/>
+                                    <Border Background="#242424" CornerRadius="6" Padding="4" Height="100" BorderBrush="#333333" BorderThickness="1">
+                                        <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                            <ItemsControl ItemsSource="{Binding AlbumGenresSelection}">
+                                                <ItemsControl.ItemTemplate>
+                                                    <DataTemplate x:DataType="vm:GenreSelectItem">
+                                                        <CheckBox IsChecked="{Binding IsSelected, Mode=TwoWay}" Margin="5,2" Foreground="White">
+                                                            <TextBlock Text="{Binding Genre.genre_name}" FontSize="12" TextTrimming="CharacterEllipsis"/>
+                                                        </CheckBox>
+                                                    </DataTemplate>
+                                                </ItemsControl.ItemTemplate>
+                                            </ItemsControl>
+                                        </ScrollViewer>
+                                    </Border>
+                                    
+                                    <Button Content="Создать альбом" Click="AddAlbumClick" Background="#282828" Foreground="White" CornerRadius="4" Margin="0,5,0,0" HorizontalAlignment="Stretch" HorizontalContentAlignment="Center"/>
+                                </StackPanel>
+                                
+                                <StackPanel Grid.Column="2" Spacing="6" Margin="10,0,0,0">
+                                    <TextBlock Text="Создатьгруппу" FontSize="12" Foreground="#1DB954" FontWeight="Bold"/>
+                                    <TextBox Text="{Binding NewAuthorName}" PlaceholderText="Имя автора/коллектива"/>
+                                    <TextBox Text="{Binding NewAuthorCountry}" PlaceholderText="Страна происхождения"/>
+                                    <Button Content="Создать автора" Click="AddAuthorClick" Background="#282828" Foreground="White" CornerRadius="4" Margin="0,5,0,0"/>
+                                </StackPanel>
+                            </Grid>
+                        </Border>
+
+                        <Grid Grid.Row="1" ColumnDefinitions="*, *, *">
+                            
+                            <Border Background="#181818" CornerRadius="6" Padding="10" Margin="0,0,10,0" Grid.Column="0">
+                                <StackPanel Spacing="5">
+                                    <TextBlock Text="🎸 Исполнители" FontWeight="Bold" Foreground="#A7A7A7" Margin="5"/>
+                                    <Separator Background="#282828"/>
+                                    <ItemsControl ItemsSource="{Binding AllAuthors}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="models:AuthorModel">
+                                                <Border Background="#242424" Margin="0,2" Padding="8" CornerRadius="4">
+                                                    <Border.ContextFlyout>
+                                                        <MenuFlyout>
+                                                            <MenuItem Header="⚠️ Ограничить доступ" Click="AuthorLimit_Click" CommandParameter="{Binding}"/>
+                                                            <MenuItem Header="❌ Полное удаление исполнителя" Click="AuthorDelete_Click" CommandParameter="{Binding}" Foreground="#FF3333"/>
+                                                        </MenuFlyout>
+                                                    </Border.ContextFlyout>
+                                                    <StackPanel>
+                                                        <TextBlock Text="{Binding author_name}" FontWeight="SemiBold" Foreground="White"/>
+                                                        <TextBlock Text="{Binding country, StringFormat='Страна: {0}'}" FontSize="11" Foreground="#888888"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="#181818" CornerRadius="6" Padding="10" Margin="5,0,5,0" Grid.Column="1">
+                                <StackPanel Spacing="5">
+                                    <TextBlock Text="💿 Альбомы" FontWeight="Bold" Foreground="#A7A7A7" Margin="5"/>
+                                    <Separator Background="#282828"/>
+                                    <ItemsControl ItemsSource="{Binding AllAlbums}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="models:AlbumModel">
+                                                <Border Background="#242424" Margin="0,2" Padding="8" CornerRadius="4">
+                                                    <Border.ContextFlyout>
+                                                        <MenuFlyout>
+                                                            <MenuItem Header="❌ Удалить альбом" Click="AlbumDelete_Click" CommandParameter="{Binding}" Foreground="#FF3333"/>
+                                                        </MenuFlyout>
+                                                    </Border.ContextFlyout>
+                                                    <StackPanel>
+                                                        <TextBlock Text="{Binding album_name}" FontWeight="SemiBold" Foreground="White"/>
+                                                        <TextBlock Text="{Binding release_year, StringFormat='Год выпуска: {0}'}" FontSize="11" Foreground="#888888"/>
+                                                    </StackPanel>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+
+                            <Border Background="#181818" CornerRadius="6" Padding="10" Margin="10,0,0,0" Grid.Column="2">
+                                <StackPanel Spacing="5">
+                                    <TextBlock Text="🎨 Жанры каталога" FontWeight="Bold" Foreground="#A7A7A7" Margin="5"/>
+                                    <Separator Background="#282828"/>
+                                    <ItemsControl ItemsSource="{Binding AllGenres}">
+                                        <ItemsControl.ItemTemplate>
+                                            <DataTemplate x:DataType="models:GenreModel">
+                                                <Border Background="#242424" Margin="0,2" Padding="8" CornerRadius="4">
+                                                    <Border.ContextFlyout>
+                                                        <MenuFlyout>
+                                                            <MenuItem Header="❌ Удалить жанр" Click="GenreDelete_Click" CommandParameter="{Binding}" Foreground="#FF3333"/>
+                                                        </MenuFlyout>
+                                                    </Border.ContextFlyout>
+                                                    <TextBlock Text="{Binding genre_name}" FontWeight="SemiBold" Foreground="White" VerticalAlignment="Center"/>
+                                                </Border>
+                                            </DataTemplate>
+                                        </ItemsControl.ItemTemplate>
+                                    </ItemsControl>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
+                    </Grid>
+                </ScrollViewer>
+            </TabItem>
+        </TabControl>
+    </Grid>
+</UserControl>

@@ -17,6 +17,7 @@ public partial class MainWindow : Window {
     internal readonly CatalogView _catalogView = new();
     private readonly ProfileView _profileView = new();
     private readonly PlaylistsView _playlistsView = new();
+    private readonly ModerationView _moderationView = new();
     private DispatcherTimer? _trackProgressTimer;
     private int _currentTrackDurationSec = 0;
 
@@ -198,6 +199,9 @@ public partial class MainWindow : Window {
                     break;
                 case "PlaylistsButton":
                     vm.CurrentPage = _playlistsView;
+                    break;
+                case "ModerationButton":
+                    vm.CurrentPage = _moderationView;
                     break;
                 default:
                     System.Diagnostics.Debug.WriteLine($"Неизвестная страница для навигации: {targetPage}");

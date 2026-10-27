@@ -447,4 +447,209 @@ public static class ApiService {
         }
         catch { return new List<PlaylistModel>(); }
     }
+
+    public static async Task<string?> AdminDeleteUserAsync(int userId) {
+        try {
+            var response = await _client.DeleteAsync($"moderation/users/{userId}/delete");
+            if (response.IsSuccessStatusCode) return null;
+            using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+            return doc.RootElement.GetProperty("detail").GetString();
+        }
+        catch (Exception ex) { return ex.Message; }
+    }
+
+    public static async Task<string?> AdminChangeUserRoleAsync(int userId, int newRoleId) {
+        try {
+            var payload = new { user_id = userId, new_role_id = newRoleId };
+            var response = await _client.PatchAsJsonAsync("moderation/users/role/change", payload);
+            if (response.IsSuccessStatusCode) return null;
+            using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+            return doc.RootElement.GetProperty("detail").GetString();
+        }
+        catch (Exception ex) { return ex.Message; }
+    }
+
+    public static async Task<string?> AdminForceChangePasswordAsync(int userId, string newPassword) {
+        try {
+            var payload = new { user_id = userId, new_password = newPassword };
+            var response = await _client.PatchAsJsonAsync("moderation/users/password/force-change", payload);
+            if (response.IsSuccessStatusCode) return null;
+            using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+            return doc.RootElement.GetProperty("detail").GetString();
+        }
+        catch (Exception ex) { return ex.Message; }
+    }
+
+    public static async Task<string?> ModeratorCreateUserAsync(string nickname, string username, string email, string password, bool isVerified) {
+        try {
+            var payload = new { 
+                nickname = nickname, username = username, 
+                email = email, password = password, is_verified = isVerified 
+            };
+            var response = await _client.PostAsJsonAsync("moderation/users/create-verified", payload);
+            if (response.IsSuccessStatusCode) return null;
+            using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+            return doc.RootElement.GetProperty("detail").GetString();
+        }
+        catch (Exception ex) { return ex.Message; }
+    }
+
+    public static async Task<string?> ModeratePlaylistVisibilityAsync(int playlistId, bool isPublic) {
+        try {
+            var response = await _client.PatchAsync($"moderation/playlists/{playlistId}/visibility?is_public={isPublic}", null);
+            if (response.IsSuccessStatusCode) return null;
+            using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+            return doc.RootElement.GetProperty("detail").GetString();
+        }
+        catch (Exception ex) { return ex.Message; }
+    }
+
+    public static async Task<string?> ModerateDeleteTrackAsync(int trackId) {
+        try {
+            var response = await _client.DeleteAsync($"moderation/tracks/{trackId}/delete");
+            if (response.IsSuccessStatusCode) return null;
+            using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+            return doc.RootElement.GetProperty("detail").GetString();
+        }
+        catch (Exception ex) { return ex.Message; }
+    }
+
+    public static async Task<string?> ModerateApplySanctionAsync(int authorId, int targetStatus) {
+        try {
+            var response = await _client.PatchAsync($"moderation/authors/{authorId}/status-sanction?target_status={targetStatus}", null);
+            if (response.IsSuccessStatusCode) return null;
+            using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+            return doc.RootElement.GetProperty("detail").GetString();
+        }
+        catch (Exception ex) { return ex.Message; }
+    }
+
+    public static async Task<List<UserModel>> AdminGetAllUsersAsync() {
+        try {
+            return await _client.GetFromJsonAsync<List<UserModel>>("moderation/users/all") ?? new();
+        }
+        catch { return new List<UserModel>(); }
+    }
+
+    public static async Task<List<PlaylistModel>> AdminGetAllPlaylistsAsync() {
+        try {
+            return await _client.GetFromJsonAsync<List<PlaylistModel>>("moderation/playlists/all") ?? new();
+        }
+        catch { return new List<PlaylistModel>(); }
+    }
+
+    public static async Task<List<AlbumModel>> AdminGetAllAlbumsAsync() {
+    try { return await _client.GetFromJsonAsync<List<AlbumModel>>("moderation/albums/all-raw") ?? new(); } catch { return new(); }
+    }
+    public static async Task<List<AuthorModel>> AdminGetAllAuthorsAsync() {
+        try { return await _client.GetFromJsonAsync<List<AuthorModel>>("moderation/authors/all-raw") ?? new(); } catch { return new(); }
+    }
+    public static async Task<string?> AdminDeleteAlbumAsync(int id) {
+        try { var r = await _client.DeleteAsync($"moderation/albums/{id}/delete"); return r.IsSuccessStatusCode ? null : "Ошибка"; } catch (Exception ex) { return ex.Message; }
+    }
+    public static async Task<string?> AdminDeleteAuthorAsync(int id) {
+        try { var r = await _client.DeleteAsync($"moderation/authors/{id}/delete-force"); return r.IsSuccessStatusCode ? null : "Ошибка"; } catch (Exception ex) { return ex.Message; }
+    }
+    public static async Task<string?> AdminDeleteGenreAsync(int id) {
+        try { var r = await _client.DeleteAsync($"moderation/genres/{id}/delete"); return r.IsSuccessStatusCode ? null : "Ошибка"; } catch (Exception ex) { return ex.Message; }
+    }
+
+    public static async Task<List<PlaylistModel>> AdminGetAllPlaylistsWithAuthorsAsync() {
+        try {
+            var response = await _client.GetAsync("moderation/playlists/all-details");
+            if (!response.IsSuccessStatusCode) return new();
+            var json = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+            var list = new List<PlaylistModel>();
+            foreach (var el in doc.RootElement.EnumerateArray()) {
+                list.Add(new PlaylistModel {
+                    playlist_id = el.GetProperty("playlist_id").GetInt32(),
+                    playlist_name = el.GetProperty("playlist_name").GetString() ?? "",
+                    is_public = el.GetProperty("is_public").GetBoolean(),
+                    user_id = el.GetProperty("user_id").GetInt32(),
+                    ui_creator_nick = el.GetProperty("creator_nick").GetString() ?? "Системный"
+                });
+            }
+            return list;
+        }
+        catch { return new(); }
+    }
+
+    public static async Task<string?> AdminAddGenreAsync(string name) {
+        try {
+            var content = new FormUrlEncodedContent(new[] { new KeyValuePair<string, string>("genre_name", name) });
+            var res = await _client.PostAsync("moderation/genres/add", content);
+            return res.IsSuccessStatusCode ? null : "Ошибка добавления жанра";
+        }
+        catch (Exception ex) { return ex.Message; }
+    }
+
+    public static async Task<string?> AdminAddAlbumAsync(string name, int year, List<int> authorIds, List<List<int>> genreIds) {
+        try {
+            var pairs = new List<KeyValuePair<string, string>> {
+                new("album_name", name),
+                new("release_year", year.ToString())
+            };
+
+            foreach (var id in authorIds) {
+                pairs.Add(new KeyValuePair<string, string>("author_ids", id.ToString()));
+            }
+
+            foreach (var id in genreIds.SelectMany(g => g)) {
+                pairs.Add(new KeyValuePair<string, string>("genre_ids", id.ToString()));
+            }
+
+            var content = new FormUrlEncodedContent(pairs);
+            var res = await _client.PostAsync("moderation/albums/add", content);
+            
+            if (res.IsSuccessStatusCode) return null;
+            
+            using var doc = await JsonDocument.ParseAsync(await res.Content.ReadAsStreamAsync());
+            return doc.RootElement.GetProperty("detail").GetString();
+        }
+        catch (Exception ex) { return ex.Message; }
+    }
+
+    public static async Task<string?> AdminUploadTrackAsync(int authorId, string compName, int year, int duration, int genreId, string version, int? albumId, string localPath) {
+        try {
+            using var content = new MultipartFormDataContent();
+            content.Add(new StringContent(authorId.ToString()), "author_id");
+            content.Add(new StringContent(compName), "composition_name");
+            content.Add(new StringContent(year.ToString()), "release_year");
+            content.Add(new StringContent(duration.ToString()), "duration");
+            content.Add(new StringContent(genreId.ToString()), "genre_id");
+            content.Add(new StringContent(version), "version_type");
+            if (albumId.HasValue) content.Add(new StringContent(albumId.Value.ToString()), "album_id");
+
+            var fileBytes = System.IO.File.ReadAllBytes(localPath);
+            var fileContent = new ByteArrayContent(fileBytes);
+            fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("audio/mpeg");
+            content.Add(fileContent, "audio_file", System.IO.Path.GetFileName(localPath));
+
+            var res = await _client.PostAsync("moderation/tracks/upload", content);
+            if (res.IsSuccessStatusCode) return null;
+            using var doc = await JsonDocument.ParseAsync(await res.Content.ReadAsStreamAsync());
+            return doc.RootElement.GetProperty("detail").GetString();
+        }
+        catch (Exception ex) { return ex.Message; }
+    }
+
+    public static async Task<string?> AdminAddSyntheticAuthorAsync(string name, string country) {
+        try {
+            var payload = new { 
+                author_name = name, 
+                country = string.IsNullOrWhiteSpace(country) ? null : country 
+            };
+            
+            var response = await _client.PostAsJsonAsync("moderation/authors/create-synthetic", payload);
+            
+            if (response.IsSuccessStatusCode) return null;
+            
+            using var doc = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
+            return doc.RootElement.GetProperty("detail").GetString();
+        }
+        catch (Exception ex) { 
+            return ex.Message; 
+        }
+    }
 }
