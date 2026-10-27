@@ -10,7 +10,6 @@ from app.schemas.author import AuthorResponseSchema
 
 class LogListeningRequestSchema(BaseModel):
     """Схема запроса добавления трека в историю прослушиваний"""
-    user_id: int
     track_id: int
     listened_duration: int
 

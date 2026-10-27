@@ -14,8 +14,10 @@ from sqlalchemy.orm import joinedload, selectinload
 
 from app.database import get_db
 from app.models.catalog import Track, Composition, Genre, Album, genres_of_composition
+from app.models.user import User
 from app.models.views import TrackDetailsView
 from app.schemas.catalog import TrackResponseSchema, AlbumFullResponseSchema, LogListeningRequestSchema
+from app.security.auth_deps import get_current_user
 
 router = APIRouter()
 
@@ -172,7 +174,8 @@ async def stream_track(
 @router.post("/listen", status_code=status.HTTP_201_CREATED)
 async def log_track_listening(
     payload: LogListeningRequestSchema, 
-    db: AsyncSession = Depends(get_db)
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Фиксация факта прослушивания трека в истории пользователя.
@@ -186,13 +189,15 @@ async def log_track_listening(
         await db.execute(
             text("CALL log_listening(:user_id, :track_id, :duration)"),
             {
-                "user_id": payload.user_id,
+                "user_id": current_user.user_id,
                 "track_id": payload.track_id,
                 "duration": payload.listened_duration
             }
         )
         await db.commit()
-        return {"status": "success", "message": "История зафиксирована в СУБД через процедуру"}
+        return {"status": "success", "message": "История успешно зафиксирована через процедуру СУБД."}
+    except HTTPException:
+        raise
     except Exception as e:
         await db.rollback()
         raise HTTPException(status_code=500, detail=str(e))
